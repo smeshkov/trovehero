@@ -1,2 +1,3 @@
-# trovehero
-Trovehero
+# Trove Hero
+
+An adventure game.
