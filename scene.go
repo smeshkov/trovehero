@@ -83,6 +83,8 @@ func (s *scene) run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 	return errc
 }
 
+// handleEvent handles event and returns true if the app needs to finish execution and quite
+// or false to signal to continue execution.
 func (s *scene) handleEvent(event sdl.Event) bool {
 	switch event.(type) {
 	case *sdl.QuitEvent:
@@ -96,25 +98,22 @@ func (s *scene) handleEvent(event sdl.Event) bool {
 	return false
 }
 
+// handleKeyboardEvent handles keyboard input event and returns true in case of exit or
+// false for any other case.
 func (s *scene) handleKeyboardEvent(event *sdl.KeyboardEvent) bool {
 	switch event.Keysym.Scancode {
 	case sdl.SCANCODE_ESCAPE:
 		return true
 	case sdl.SCANCODE_SPACE:
-		log.Println("jump")
-		s.h.Move(hero.Jump)
+		s.h.Do(hero.Jump)
 	case sdl.SCANCODE_LEFT:
-		log.Println("left")
-		s.h.Move(hero.Left)
+		s.h.Do(hero.Left)
 	case sdl.SCANCODE_RIGHT:
-		log.Println("right")
-		s.h.Move(hero.Right)
+		s.h.Do(hero.Right)
 	case sdl.SCANCODE_UP:
-		log.Println("up")
-		s.h.Move(hero.Up)
+		s.h.Do(hero.Up)
 	case sdl.SCANCODE_DOWN:
-		log.Println("down")
-		s.h.Move(hero.Down)
+		s.h.Do(hero.Down)
 	}
 	return false
 }

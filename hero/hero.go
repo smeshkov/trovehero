@@ -2,7 +2,6 @@ package hero
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"sync"
 
@@ -10,29 +9,16 @@ import (
 )
 
 const (
-	gravity  = 0.1
-	friction = 5
-
-	// Jump direction
-	Jump Direction = iota
-	// Up direction
-	Up
-	// Down direction
-	Down
-	// Left direction
-	Left
-	// Right direction
-	Right
+	gravity     = 0.1
+	friction    = 1.5
+	airFriction = 0.2
 )
-
-// Direction is movement direction.
-type Direction byte
 
 // Hero is a playbale character.
 type Hero struct {
 	mu sync.RWMutex
 
-	time int
+	time int64
 
 	// tools
 	rect *sdl.Rect
@@ -57,6 +43,9 @@ type Hero struct {
 	vertSpeed float64
 	horSpeed  float64
 	jumpSpeed float64
+
+	// commands
+	commands commands
 }
 
 // NewHero creates new instance of Hero.
@@ -73,8 +62,8 @@ func NewHero(r *sdl.Renderer) *Hero {
 		// properties
 		height:       heroHeight,
 		width:        heroWidth,
-		maxMoveSpeed: 7,
-		maxJumpSpeed: 3.5,
+		maxMoveSpeed: 8,
+		maxJumpSpeed: 4,
 
 		// coordinates
 		coordX: coordX,
@@ -85,33 +74,57 @@ func NewHero(r *sdl.Renderer) *Hero {
 		y: coordY,
 		h: heroHeight,
 		w: heroWidth,
+
+		// timers
+		commands: commands{},
 	}
 }
 
-// Move moves Hero.
-func (h *Hero) Move(d Direction) {
+// Do performes command on a Hero.
+func (h *Hero) Do(t CommandType) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	switch d {
-	case Jump:
-		if h.altitude > 0 {
-			return
+	// log.Printf("performing %s...\n", c)
+	if cmd, ok := h.commands[t]; ok {
+		cmd.double = true
+	} else {
+		h.commands[t] = &Command{
+			t:    t,
+			ttl:  defaultTTL[t],
+			time: h.time,
 		}
-		log.Println("jumping...")
+	}
+}
+
+func (h *Hero) doCommand(cmd *Command) {
+	switch cmd.t {
+	case Jump:
 		h.jumpSpeed = h.maxJumpSpeed
 	case Up:
-		log.Println("going up...")
-		h.vertSpeed = -h.maxMoveSpeed
+		if cmd.double {
+			h.vertSpeed = -h.maxMoveSpeed * 1.5
+		} else {
+			h.vertSpeed = -h.maxMoveSpeed
+		}
 	case Down:
-		log.Println("going down...")
-		h.vertSpeed = h.maxMoveSpeed
+		if cmd.double {
+			h.vertSpeed = h.maxMoveSpeed * 1.5
+		} else {
+			h.vertSpeed = h.maxMoveSpeed
+		}
 	case Left:
-		log.Println("going left...")
-		h.horSpeed = -h.maxMoveSpeed
+		if cmd.double {
+			h.horSpeed = -h.maxMoveSpeed * 1.5
+		} else {
+			h.horSpeed = -h.maxMoveSpeed
+		}
 	case Right:
-		log.Println("going right...")
-		h.horSpeed = h.maxMoveSpeed
+		if cmd.double {
+			h.horSpeed = h.maxMoveSpeed * 1.5
+		} else {
+			h.horSpeed = h.maxMoveSpeed
+		}
 	}
 }
 
@@ -121,6 +134,24 @@ func (h *Hero) Update() {
 	defer h.mu.Unlock()
 
 	h.time++
+
+	// check commands
+	jump := h.commands[Jump]
+	for t, cmd := range h.commands {
+		isMoving := t != Jump
+		// performs command in following cases:
+		// 1. Hero is standing on the ground
+		// 2. Hero has jumped and the gap between Jump and Move commands is within the boundaries of the Move's TTL
+		if h.altitude == 0 || (jump != nil && isMoving && math.Abs(float64(jump.time-cmd.time)) <= float64(cmd.ttl)) {
+			h.doCommand(cmd)
+			delete(h.commands, t)
+		} else {
+			cmd.ttl--
+			if cmd.ttl == 0 {
+				delete(h.commands, t)
+			}
+		}
+	}
 
 	h.handleJump()
 	h.handleMove()
@@ -191,7 +222,7 @@ func (h *Hero) clearRect() error {
 func (h *Hero) handleJump() {
 	// rising
 	if h.jumpSpeed > 0 {
-		log.Println("rising...")
+		// log.Println("rising...")
 		h.altitude += h.jumpSpeed
 		h.resize()
 		h.jumpSpeed -= gravity
@@ -200,7 +231,7 @@ func (h *Hero) handleJump() {
 
 	// falling
 	if h.altitude > 0 && h.jumpSpeed <= 0 {
-		log.Println("falling...")
+		// log.Println("falling...")
 		h.altitude = math.Max(0, h.altitude+h.jumpSpeed)
 		h.resize()
 		h.jumpSpeed -= gravity
@@ -209,7 +240,7 @@ func (h *Hero) handleJump() {
 
 	// landed
 	if h.altitude == 0 && h.jumpSpeed < 0 {
-		log.Println("landed...")
+		// log.Println("landed...")
 		h.jumpSpeed = 0
 		h.h = h.height
 		h.w = h.width
@@ -220,18 +251,29 @@ func (h *Hero) handleJump() {
 }
 
 func (h *Hero) handleMove() {
+	var frict float64
+	if h.altitude == 0 {
+		frict = friction
+	} else {
+		frict = airFriction
+	}
+
 	if h.horSpeed != 0 {
 		h.coordX += int32(h.horSpeed)
 		h.x += int32(h.horSpeed)
-		if h.altitude == 0 {
-			h.horSpeed = math.Max(0, h.horSpeed-friction)
+		if h.horSpeed > 0 {
+			h.horSpeed = math.Max(0, h.horSpeed-frict)
+		} else {
+			h.horSpeed = math.Min(0, h.horSpeed+frict)
 		}
 	}
 	if h.vertSpeed != 0 {
 		h.coordY += int32(h.vertSpeed)
 		h.y += int32(h.vertSpeed)
-		if h.altitude == 0 {
-			h.vertSpeed = math.Max(0, h.vertSpeed-friction)
+		if h.vertSpeed > 0 {
+			h.vertSpeed = math.Max(0, h.vertSpeed-frict)
+		} else {
+			h.vertSpeed = math.Min(0, h.vertSpeed+frict)
 		}
 	}
 }
