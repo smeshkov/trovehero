@@ -18,9 +18,11 @@ import (
 	"os"
 	"runtime"
 	"time"
-
+	
 	"github.com/veandco/go-sdl2/sdl"
 	ttf "github.com/veandco/go-sdl2/ttf"
+
+	"github.com/smeshkov/trovehero/scene"
 )
 
 func main() {
@@ -48,20 +50,20 @@ func run() error {
 	}
 	defer w.Destroy()
 
-	if err := drawTitle(r, "Trove Hero"); err != nil {
+	if err := scene.DrawTitle(r, "Trove Hero"); err != nil {
 		return fmt.Errorf("could not draw title: %w", err)
 	}
 
 	time.Sleep(1 * time.Second)
 
-	s, err := newScene(r)
+	s, err := scene.NewScene(r)
 	if err != nil {
 		return fmt.Errorf("could not create scene: %w", err)
 	}
-	defer s.destroy()
+	defer s.Destroy()
 
 	events := make(chan sdl.Event)
-	errc := s.run(events, r)
+	errc := s.Run(events, r)
 
 	runtime.LockOSThread()
 	for {
@@ -71,35 +73,4 @@ func run() error {
 			return err
 		}
 	}
-}
-
-func drawTitle(r *sdl.Renderer, text string) error {
-	r.Clear()
-
-	f, err := ttf.OpenFont("res/fonts/Flappy.ttf", 20)
-	if err != nil {
-		return fmt.Errorf("could not load font: %w", err)
-	}
-	defer f.Close()
-
-	c := sdl.Color{R: 255, G: 100, B: 0, A: 255}
-	s, err := f.RenderUTF8Solid(text, c)
-	if err != nil {
-		return fmt.Errorf("could not render title: %w", err)
-	}
-	defer s.Free()
-
-	t, err := r.CreateTextureFromSurface(s)
-	if err != nil {
-		return fmt.Errorf("could not create texture: %w", err)
-	}
-	defer t.Destroy()
-
-	if err := r.Copy(t, nil, nil); err != nil {
-		return fmt.Errorf("could not copy texture: %w", err)
-	}
-
-	r.Present()
-
-	return nil
 }

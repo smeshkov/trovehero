@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"math"
 	"sync"
-
+	
 	"github.com/veandco/go-sdl2/sdl"
+
+	"github.com/smeshkov/trovehero/pit"
 )
 
 const (
@@ -22,7 +24,6 @@ type Hero struct {
 
 	// tools
 	rect *sdl.Rect
-	r    *sdl.Renderer
 
 	// properties
 	height       int32
@@ -46,19 +47,18 @@ type Hero struct {
 
 	// commands
 	commands commands
+
+	dead bool
 }
 
 // NewHero creates new instance of Hero.
-func NewHero(r *sdl.Renderer) *Hero {
+func NewHero(x, y int32) *Hero {
 	var heroWidth int32 = 50
 	var heroHeight int32 = 50
-	var coordX int32 = 800/2 - heroWidth/2
-	var coordY int32 = 600/2 - heroHeight/2
+	var coordX int32 = x - heroWidth/2
+	var coordY int32 = y - heroHeight/2
 
 	return &Hero{
-		// tools
-		r: r,
-
 		// properties
 		height:       heroHeight,
 		width:        heroWidth,
@@ -85,10 +85,7 @@ func (h *Hero) Do(t CommandType) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	// log.Printf("performing %s...\n", c)
-	if cmd, ok := h.commands[t]; ok {
-		cmd.double = true
-	} else {
+	if _, ok := h.commands[t]; !ok {
 		h.commands[t] = &Command{
 			t:    t,
 			ttl:  defaultTTL[t],
@@ -102,29 +99,13 @@ func (h *Hero) doCommand(cmd *Command) {
 	case Jump:
 		h.jumpSpeed = h.maxJumpSpeed
 	case Up:
-		if cmd.double {
-			h.vertSpeed = -h.maxMoveSpeed * 1.5
-		} else {
-			h.vertSpeed = -h.maxMoveSpeed
-		}
+		h.vertSpeed = -h.maxMoveSpeed
 	case Down:
-		if cmd.double {
-			h.vertSpeed = h.maxMoveSpeed * 1.5
-		} else {
-			h.vertSpeed = h.maxMoveSpeed
-		}
+		h.vertSpeed = h.maxMoveSpeed
 	case Left:
-		if cmd.double {
-			h.horSpeed = -h.maxMoveSpeed * 1.5
-		} else {
-			h.horSpeed = -h.maxMoveSpeed
-		}
+		h.horSpeed = -h.maxMoveSpeed
 	case Right:
-		if cmd.double {
-			h.horSpeed = h.maxMoveSpeed * 1.5
-		} else {
-			h.horSpeed = h.maxMoveSpeed
-		}
+		h.horSpeed = h.maxMoveSpeed
 	}
 }
 
@@ -158,21 +139,21 @@ func (h *Hero) Update() {
 }
 
 // Paint paints Hero to window.
-func (h *Hero) Paint() error {
+func (h *Hero) Paint(r *sdl.Renderer) error {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
 	// remove previous rectangle
-	err := h.clearRect()
+	err := h.clearRect(r)
 	if err != nil {
 		return err
 	}
 
 	// fill new rectangle
-	h.r.SetDrawColor(255, 100, 0, 255)
+	r.SetDrawColor(255, 100, 0, 255)
 	h.rect = &sdl.Rect{X: h.x, Y: h.y, W: h.w, H: h.h}
-	h.r.FillRect(h.rect)
-	h.r.SetDrawColor(0, 0, 0, 255)
+	r.FillRect(h.rect)
+	r.SetDrawColor(0, 0, 0, 255)
 
 	// i := b.time / 10 % len(b.textures)
 	// if err := r.Copy(b.textures[i], nil, rect); err != nil {
@@ -186,15 +167,12 @@ func (h *Hero) Restart() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	h = NewHero(h.r)
+	h = NewHero(800/2, 550)
 }
 
 // Destroy removes Hero.
 func (h *Hero) Destroy() {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	h.clearRect()
+	// noop
 }
 
 func (h *Hero) resize() {
@@ -207,12 +185,12 @@ func (h *Hero) resize() {
 	}
 }
 
-func (h *Hero) clearRect() error {
-	err := h.r.SetDrawColor(0, 0, 0, 0)
+func (h *Hero) clearRect(r *sdl.Renderer) error {
+	err := r.SetDrawColor(0, 0, 0, 0)
 	if err != nil {
 		return fmt.Errorf("could not set draw color: %w", err)
 	}
-	err = h.r.FillRect(h.rect)
+	err = r.FillRect(h.rect)
 	if err != nil {
 		return fmt.Errorf("could not fill rectangle: %w", err)
 	}
@@ -276,4 +254,32 @@ func (h *Hero) handleMove() {
 			h.vertSpeed = math.Min(0, h.vertSpeed+frict)
 		}
 	}
+}
+
+// Touch ...
+func (h *Hero) Touch(p *pit.Pit) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if p.X > h.x+h.w { // too far right
+		return
+	}
+	if p.X+p.W < h.x { // too far left
+		return
+	}
+	if p.Y > h.y+h.h { // too far below
+		return
+	}
+	if p.Y+p.H < h.y { // to far above
+		return
+	}
+
+	h.dead = true
+}
+
+// IsDead ....
+func (h *Hero) IsDead() bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.dead
 }

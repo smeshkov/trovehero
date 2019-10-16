@@ -11,27 +11,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package scene
 
 import (
 	// "fmt"
 	"log"
 	"time"
-	
+
 	"github.com/veandco/go-sdl2/sdl"
 	// img "github.com/veandco/go-sdl2/img"
 
 	"github.com/smeshkov/trovehero/hero"
+	"github.com/smeshkov/trovehero/pit"
 )
 
-type scene struct {
+// Scene represent the scene of the game.
+type Scene struct {
 	// bg    *sdl.Texture
 	// bird  *bird
 	// pipes *pipes
 	h *hero.Hero
+	p *pit.Pit
 }
 
-func newScene(r *sdl.Renderer) (*scene, error) {
+// NewScene returns new instance of the Scene.
+func NewScene(r *sdl.Renderer) (*Scene, error) {
 	// bg, err := img.LoadTexture(r, "res/imgs/background.png")
 	// if err != nil {
 	// 	return nil, fmt.Errorf("could not load background image: %w", err)
@@ -47,12 +51,14 @@ func newScene(r *sdl.Renderer) (*scene, error) {
 	// 	return nil, err
 	// }
 
-	h := hero.NewHero(r)
+	h := hero.NewHero(800/2, 550)
+	p := pit.NewPit(800/2, 350, 70, 150)
 
-	return &scene{ /* bg: bg, bird: b, pipes: ps*/ h: h}, nil
+	return &Scene{ /* bg: bg, bird: b, pipes: ps*/ h: h, p: p}, nil
 }
 
-func (s *scene) run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
+// Run runs the Scene.
+func (s *Scene) Run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 	errc := make(chan error)
 
 	go func() {
@@ -67,6 +73,11 @@ func (s *scene) run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 			case <-tick:
 				s.update()
 
+				if s.h.IsDead() {
+					DrawTitle(r, "Game Over")
+					time.Sleep(time.Second)
+					s.restart()
+				}
 				// if s.bird.isDead() {
 				// 	drawTitle(r, "Game Over")
 				// 	time.Sleep(time.Second)
@@ -85,7 +96,7 @@ func (s *scene) run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 
 // handleEvent handles event and returns true if the app needs to finish execution and quite
 // or false to signal to continue execution.
-func (s *scene) handleEvent(event sdl.Event) bool {
+func (s *Scene) handleEvent(event sdl.Event) bool {
 	switch event.(type) {
 	case *sdl.QuitEvent:
 		return true
@@ -100,7 +111,7 @@ func (s *scene) handleEvent(event sdl.Event) bool {
 
 // handleKeyboardEvent handles keyboard input event and returns true in case of exit or
 // false for any other case.
-func (s *scene) handleKeyboardEvent(event *sdl.KeyboardEvent) bool {
+func (s *Scene) handleKeyboardEvent(event *sdl.KeyboardEvent) bool {
 	switch event.Keysym.Scancode {
 	case sdl.SCANCODE_ESCAPE:
 		return true
@@ -118,19 +129,23 @@ func (s *scene) handleKeyboardEvent(event *sdl.KeyboardEvent) bool {
 	return false
 }
 
-func (s *scene) update() {
+func (s *Scene) update() {
 	s.h.Update()
+	s.p.Update()
+	s.h.Touch(s.p)
 	// s.bird.update()
 	// s.pipes.update()
 	// s.pipes.touch(s.bird)
 }
 
-func (s *scene) restart() {
+func (s *Scene) restart() {
+	s.h.Restart()
+	s.p.Restart()
 	// s.bird.restart()
 	// s.pipes.restart()
 }
 
-func (s *scene) paint(r *sdl.Renderer) error {
+func (s *Scene) paint(r *sdl.Renderer) error {
 	r.Clear()
 	// if err := r.Copy(s.bg, nil, nil); err != nil {
 	// 	return fmt.Errorf("could not copy background: %w", err)
@@ -142,7 +157,10 @@ func (s *scene) paint(r *sdl.Renderer) error {
 	// 	return err
 	// }
 
-	if err := s.h.Paint(); err != nil {
+	if err := s.h.Paint(r); err != nil {
+		return err
+	}
+	if err := s.p.Paint(r); err != nil {
 		return err
 	}
 
@@ -150,9 +168,11 @@ func (s *scene) paint(r *sdl.Renderer) error {
 	return nil
 }
 
-func (s *scene) destroy() {
+// Destroy destriys the scene.
+func (s *Scene) Destroy() {
 	// s.bg.Destroy()
 	s.h.Destroy()
+	s.p.Destroy()
 	// s.bird.destroy()
 	// s.pipes.destroy()
 }

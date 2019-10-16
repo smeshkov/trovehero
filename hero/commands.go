@@ -3,14 +3,16 @@ package hero
 const (
 	// Jump direction
 	Jump CommandType = iota
-	// Up direction
+	// Up makes Hero to move up.
 	Up
-	// Down direction
+	// Down makes Hero to move down.
 	Down
-	// Left direction
+	// Left makes Hero to move left.
 	Left
-	// Right direction
+	// Right makes Hero to move left.
 	Right
+	// Shoot makes Hero to shoot left.
+	Shoot
 )
 
 var (
@@ -20,6 +22,7 @@ var (
 		Down:  "Down",
 		Left:  "Left",
 		Right: "Right",
+		Shoot: "Shoot",
 	}
 
 	defaultTTL = map[CommandType]byte{
@@ -35,7 +38,7 @@ var (
 type CommandType byte
 
 func (ct CommandType) String() string {
-	if ct < Jump || ct > Right {
+	if ct < Jump || ct > Shoot {
 		return "Unknown"
 	}
 	return commandTypeNames[ct]
@@ -48,5 +51,4 @@ type Command struct {
 	t      CommandType
 	time   int64
 	ttl    byte
-	double bool
 }
