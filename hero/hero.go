@@ -1,19 +1,22 @@
 package hero
 
 import (
+	// "log"
 	"fmt"
 	"math"
 	"sync"
-	
+
 	"github.com/veandco/go-sdl2/sdl"
 
 	"github.com/smeshkov/trovehero/pit"
 )
 
 const (
-	gravity     = 0.1
-	friction    = 1.5
-	airFriction = 0.2
+	gravity         = 0.1
+	friction        = 0.2
+	airFriction     = 0.1
+	altitudeMargin  = 35
+	collisionMargin = 10
 )
 
 // Hero is a playbale character.
@@ -48,7 +51,8 @@ type Hero struct {
 	// commands
 	commands commands
 
-	dead bool
+	crashingDepth float64
+	dead          bool
 }
 
 // NewHero creates new instance of Hero.
@@ -62,7 +66,7 @@ func NewHero(x, y int32) *Hero {
 		// properties
 		height:       heroHeight,
 		width:        heroWidth,
-		maxMoveSpeed: 8,
+		maxMoveSpeed: 7,
 		maxJumpSpeed: 4,
 
 		// coordinates
@@ -85,17 +89,12 @@ func (h *Hero) Do(t CommandType) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	if _, ok := h.commands[t]; !ok {
-		h.commands[t] = &Command{
-			t:    t,
-			ttl:  defaultTTL[t],
-			time: h.time,
-		}
+	// can't move if not within alowed marging from the ground
+	if h.altitude > altitudeMargin {
+		return
 	}
-}
 
-func (h *Hero) doCommand(cmd *Command) {
-	switch cmd.t {
+	switch t {
 	case Jump:
 		h.jumpSpeed = h.maxJumpSpeed
 	case Up:
@@ -109,6 +108,21 @@ func (h *Hero) doCommand(cmd *Command) {
 	}
 }
 
+/* func (h *Hero) doCommand(cmd *Command) {
+	switch cmd.t {
+	case Jump:
+		h.jumpSpeed = h.maxJumpSpeed
+	case Up:
+		h.vertSpeed = -h.maxMoveSpeed
+	case Down:
+		h.vertSpeed = h.maxMoveSpeed
+	case Left:
+		h.horSpeed = -h.maxMoveSpeed
+	case Right:
+		h.horSpeed = h.maxMoveSpeed
+	}
+} */
+
 // Update updates state of the Hero.
 func (h *Hero) Update() {
 	h.mu.Lock()
@@ -117,25 +131,36 @@ func (h *Hero) Update() {
 	h.time++
 
 	// check commands
-	jump := h.commands[Jump]
-	for t, cmd := range h.commands {
-		isMoving := t != Jump
+	/* for cmdType, cmd := range h.commands {
+		// Time to live of the command is over,
+		// remove it from register.
+		if cmd.ttl <= 0 {
+			delete(h.commands, cmdType)
+			continue
+		}
+
+		isMoving := cmdType != Jump
+
 		// performs command in following cases:
 		// 1. Hero is standing on the ground
 		// 2. Hero has jumped and the gap between Jump and Move commands is within the boundaries of the Move's TTL
-		if h.altitude == 0 || (jump != nil && isMoving && math.Abs(float64(jump.time-cmd.time)) <= float64(cmd.ttl)) {
+		if h.altitude == 0 || isMoving {
 			h.doCommand(cmd)
-			delete(h.commands, t)
-		} else {
-			cmd.ttl--
-			if cmd.ttl == 0 {
-				delete(h.commands, t)
-			}
+			delete(h.commands, cmdType)
 		}
-	}
 
-	h.handleJump()
-	h.handleMove()
+		cmd.ttl--
+	} */
+
+	if h.horSpeed != 0 || h.vertSpeed != 0 {
+		h.handleMove()
+	}
+	if h.crashingDepth == 0 && h.jumpSpeed != 0 {
+		h.handleJump()
+	}
+	if h.crashingDepth != 0 {
+		h.handleCrash()
+	}
 }
 
 // Paint paints Hero to window.
@@ -176,12 +201,16 @@ func (h *Hero) Destroy() {
 }
 
 func (h *Hero) resize() {
-	if h.altitude > 0 {
+	if h.altitude != 0 {
 		h.w = h.width + int32(h.altitude)
 		h.h = h.height + int32(h.altitude)
-
 		h.x = h.coordX - int32(h.altitude/2)
 		h.y = h.coordY - int32(h.altitude/2)
+	} else if h.altitude == 0 {
+		h.h = h.height
+		h.w = h.width
+		h.x = h.coordX
+		h.y = h.coordY
 	}
 }
 
@@ -197,10 +226,23 @@ func (h *Hero) clearRect(r *sdl.Renderer) error {
 	return nil
 }
 
+func (h *Hero) handleCrash() {
+	// crashing
+	if h.altitude > h.crashingDepth {
+		h.jumpSpeed -= gravity
+		h.altitude += h.jumpSpeed
+		h.resize()
+	} else { // crashed
+		h.jumpSpeed = 0
+		h.altitude = h.crashingDepth
+		h.dead = true
+	}
+}
+
 func (h *Hero) handleJump() {
 	// rising
 	if h.jumpSpeed > 0 {
-		// log.Println("rising...")
+		// log.Printf("rising... %.2f\n", h.altitude)
 		h.altitude += h.jumpSpeed
 		h.resize()
 		h.jumpSpeed -= gravity
@@ -209,7 +251,7 @@ func (h *Hero) handleJump() {
 
 	// falling
 	if h.altitude > 0 && h.jumpSpeed <= 0 {
-		// log.Println("falling...")
+		// log.Printf("falling...%.2f\n", h.altitude)
 		h.altitude = math.Max(0, h.altitude+h.jumpSpeed)
 		h.resize()
 		h.jumpSpeed -= gravity
@@ -218,7 +260,7 @@ func (h *Hero) handleJump() {
 
 	// landed
 	if h.altitude == 0 && h.jumpSpeed < 0 {
-		// log.Println("landed...")
+		// log.Printf("landed...%.2f\n", h.altitude)
 		h.jumpSpeed = 0
 		h.h = h.height
 		h.w = h.width
@@ -261,20 +303,24 @@ func (h *Hero) Touch(p *pit.Pit) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	if p.X > h.x+h.w { // too far right
+	if h.altitude > 0 { // above in the air
 		return
 	}
-	if p.X+p.W < h.x { // too far left
+	if p.X > h.x+h.w-collisionMargin { // too far right
 		return
 	}
-	if p.Y > h.y+h.h { // too far below
+	if p.X+p.W-collisionMargin < h.x { // too far left
 		return
 	}
-	if p.Y+p.H < h.y { // to far above
+	if p.Y > h.y+h.h-collisionMargin { // too far below
+		return
+	}
+	if p.Y+p.H-collisionMargin < h.y { // to far above
 		return
 	}
 
-	h.dead = true
+	h.crashingDepth = p.Depth()
+	// h.dead = true
 }
 
 // IsDead ....

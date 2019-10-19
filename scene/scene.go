@@ -30,8 +30,8 @@ type Scene struct {
 	// bg    *sdl.Texture
 	// bird  *bird
 	// pipes *pipes
-	h *hero.Hero
-	p *pit.Pit
+	hero *hero.Hero
+	pit  *pit.Pit
 }
 
 // NewScene returns new instance of the Scene.
@@ -51,10 +51,10 @@ func NewScene(r *sdl.Renderer) (*Scene, error) {
 	// 	return nil, err
 	// }
 
-	h := hero.NewHero(800/2, 550)
-	p := pit.NewPit(800/2, 350, 70, 150)
+	p := pit.NewPit(1024/2, 250, 50, 150, -60)
+	h := hero.NewHero(1024/2, 700)
 
-	return &Scene{ /* bg: bg, bird: b, pipes: ps*/ h: h, p: p}, nil
+	return &Scene{ /* bg: bg, bird: b, pipes: ps*/ hero: h, pit: p}, nil
 }
 
 // Run runs the Scene.
@@ -73,16 +73,11 @@ func (s *Scene) Run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 			case <-tick:
 				s.update()
 
-				if s.h.IsDead() {
+				if s.hero.IsDead() {
 					DrawTitle(r, "Game Over")
 					time.Sleep(time.Second)
 					s.restart()
 				}
-				// if s.bird.isDead() {
-				// 	drawTitle(r, "Game Over")
-				// 	time.Sleep(time.Second)
-				// 	s.restart()
-				// }
 
 				if err := s.paint(r); err != nil {
 					errc <- err
@@ -116,31 +111,31 @@ func (s *Scene) handleKeyboardEvent(event *sdl.KeyboardEvent) bool {
 	case sdl.SCANCODE_ESCAPE:
 		return true
 	case sdl.SCANCODE_SPACE:
-		s.h.Do(hero.Jump)
+		s.hero.Do(hero.Jump)
 	case sdl.SCANCODE_LEFT:
-		s.h.Do(hero.Left)
+		s.hero.Do(hero.Left)
 	case sdl.SCANCODE_RIGHT:
-		s.h.Do(hero.Right)
+		s.hero.Do(hero.Right)
 	case sdl.SCANCODE_UP:
-		s.h.Do(hero.Up)
+		s.hero.Do(hero.Up)
 	case sdl.SCANCODE_DOWN:
-		s.h.Do(hero.Down)
+		s.hero.Do(hero.Down)
 	}
 	return false
 }
 
 func (s *Scene) update() {
-	s.h.Update()
-	s.p.Update()
-	s.h.Touch(s.p)
+	s.hero.Update()
+	s.pit.Update()
+	s.hero.Touch(s.pit)
 	// s.bird.update()
 	// s.pipes.update()
 	// s.pipes.touch(s.bird)
 }
 
 func (s *Scene) restart() {
-	s.h.Restart()
-	s.p.Restart()
+	s.pit.Restart()
+	s.hero.Restart()
 	// s.bird.restart()
 	// s.pipes.restart()
 }
@@ -157,10 +152,10 @@ func (s *Scene) paint(r *sdl.Renderer) error {
 	// 	return err
 	// }
 
-	if err := s.h.Paint(r); err != nil {
+	if err := s.pit.Paint(r); err != nil {
 		return err
 	}
-	if err := s.p.Paint(r); err != nil {
+	if err := s.hero.Paint(r); err != nil {
 		return err
 	}
 
@@ -171,8 +166,8 @@ func (s *Scene) paint(r *sdl.Renderer) error {
 // Destroy destriys the scene.
 func (s *Scene) Destroy() {
 	// s.bg.Destroy()
-	s.h.Destroy()
-	s.p.Destroy()
+	s.pit.Destroy()
+	s.hero.Destroy()
 	// s.bird.destroy()
 	// s.pipes.destroy()
 }

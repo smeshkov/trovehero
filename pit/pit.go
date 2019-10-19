@@ -18,16 +18,24 @@ type Pit struct {
 
 	X, Y int32
 	W, H int32
+
+	depth float64
 }
 
 // NewPit creates new instance of the Pit.
-func NewPit(x, y, height, width int32) *Pit {
+func NewPit(x, y, height, width int32, depth float64) *Pit {
 	return &Pit{
-		X: x - width/2,
-		Y: y - height/2,
-		H: height,
-		W: width,
+		X:     x - width/2,
+		Y:     y - height/2,
+		H:     height,
+		W:     width,
+		depth: depth,
 	}
+}
+
+// Depth tells how deep is the Pit.
+func (p *Pit) Depth() float64 {
+	return p.depth
 }
 
 // Update ...

@@ -44,7 +44,7 @@ func run() error {
 	}
 	defer ttf.Quit()
 
-	w, r, err := sdl.CreateWindowAndRenderer(800, 600, sdl.WINDOW_SHOWN)
+	w, r, err := sdl.CreateWindowAndRenderer(1024, 768, sdl.WINDOW_SHOWN)
 	if err != nil {
 		return fmt.Errorf("could not create window: %w", err)
 	}
