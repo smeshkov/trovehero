@@ -21,8 +21,11 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 	// img "github.com/veandco/go-sdl2/img"
 
+	"github.com/smeshkov/trovehero/enemy"
 	"github.com/smeshkov/trovehero/hero"
 	"github.com/smeshkov/trovehero/pit"
+	"github.com/smeshkov/trovehero/types"
+	"github.com/smeshkov/trovehero/world"
 )
 
 // Scene represent the scene of the game.
@@ -30,8 +33,9 @@ type Scene struct {
 	// bg    *sdl.Texture
 	// bird  *bird
 	// pipes *pipes
-	hero *hero.Hero
-	pit  *pit.Pit
+	hero  *hero.Hero
+	pit   *pit.Pit
+	enemy *enemy.Enemy
 }
 
 // NewScene returns new instance of the Scene.
@@ -51,10 +55,13 @@ func NewScene(r *sdl.Renderer) (*Scene, error) {
 	// 	return nil, err
 	// }
 
-	p := pit.NewPit(1024/2, 250, 50, 150, -60)
-	h := hero.NewHero(1024/2, 700)
+	w := world.NewWorld(1024, 768, &sdl.Rect{W: 1024, H: 768, X: 0, Y: 0})
 
-	return &Scene{ /* bg: bg, bird: b, pipes: ps*/ hero: h, pit: p}, nil
+	p := pit.NewPit(w.W/2, 250, 50, 150, -60)
+	h := hero.NewHero(w.W/2, 700)
+	e := enemy.NewEnemy(30, 30, w)
+
+	return &Scene{ /* bg: bg, bird: b, pipes: ps*/ hero: h, pit: p, enemy: e}, nil
 }
 
 // Run runs the Scene.
@@ -111,23 +118,25 @@ func (s *Scene) handleKeyboardEvent(event *sdl.KeyboardEvent) bool {
 	case sdl.SCANCODE_ESCAPE:
 		return true
 	case sdl.SCANCODE_SPACE:
-		s.hero.Do(hero.Jump)
+		s.hero.Do(types.Jump)
 	case sdl.SCANCODE_LEFT:
-		s.hero.Do(hero.Left)
+		s.hero.Do(types.GoWest)
 	case sdl.SCANCODE_RIGHT:
-		s.hero.Do(hero.Right)
+		s.hero.Do(types.GoEast)
 	case sdl.SCANCODE_UP:
-		s.hero.Do(hero.Up)
+		s.hero.Do(types.GoNorth)
 	case sdl.SCANCODE_DOWN:
-		s.hero.Do(hero.Down)
+		s.hero.Do(types.GoSouth)
 	}
 	return false
 }
 
 func (s *Scene) update() {
 	s.hero.Update()
-	s.pit.Update()
 	s.hero.Touch(s.pit)
+	// s.pit.Update()
+	s.enemy.Watch(s.hero)
+	s.enemy.Update()
 	// s.bird.update()
 	// s.pipes.update()
 	// s.pipes.touch(s.bird)
@@ -156,6 +165,9 @@ func (s *Scene) paint(r *sdl.Renderer) error {
 		return err
 	}
 	if err := s.hero.Paint(r); err != nil {
+		return err
+	}
+	if err := s.enemy.Paint(r); err != nil {
 		return err
 	}
 

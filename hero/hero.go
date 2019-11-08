@@ -9,11 +9,12 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 
 	"github.com/smeshkov/trovehero/pit"
+	"github.com/smeshkov/trovehero/types"
 )
 
 const (
 	gravity         = 0.1
-	friction        = 0.2
+	friction        = 0.08
 	airFriction     = 0.1
 	altitudeMargin  = 35
 	collisionMargin = 10
@@ -31,31 +32,27 @@ type Hero struct {
 	// properties
 	height       int32
 	width        int32
-	maxMoveSpeed float64
-	maxJumpSpeed float64
+	maxMoveSpeed float32
+	maxJumpSpeed float32
 
 	// coordinates
-	coordX int32
-	coordY int32
+	location *sdl.Point
+	altitude int8
 
 	// shape
 	x, y int32
 	w, h int32
 
-	// velocity
-	altitude  float64
-	vertSpeed float64
-	horSpeed  float64
-	jumpSpeed float64
+	// speed
+	vertSpeed float32
+	horSpeed  float32
+	altSpeed  float32
 
-	// commands
-	commands commands
-
-	crashingDepth float64
+	crashingDepth int8
 	dead          bool
 }
 
-// NewHero creates new instance of Hero.
+// NewHero creates new instance of Hero in given coordinates.
 func NewHero(x, y int32) *Hero {
 	var heroWidth int32 = 50
 	var heroHeight int32 = 50
@@ -66,26 +63,22 @@ func NewHero(x, y int32) *Hero {
 		// properties
 		height:       heroHeight,
 		width:        heroWidth,
-		maxMoveSpeed: 7,
+		maxMoveSpeed: 4,
 		maxJumpSpeed: 4,
 
 		// coordinates
-		coordX: coordX,
-		coordY: coordY,
+		location: &sdl.Point{X: coordX, Y: coordY},
 
-		// shape
+		// speed
 		x: coordX,
 		y: coordY,
 		h: heroHeight,
 		w: heroWidth,
-
-		// timers
-		commands: commands{},
 	}
 }
 
 // Do performes command on a Hero.
-func (h *Hero) Do(t CommandType) {
+func (h *Hero) Do(t types.CommandType) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -95,33 +88,18 @@ func (h *Hero) Do(t CommandType) {
 	}
 
 	switch t {
-	case Jump:
-		h.jumpSpeed = h.maxJumpSpeed
-	case Up:
+	case types.Jump:
+		h.altSpeed = h.maxJumpSpeed
+	case types.GoNorth:
 		h.vertSpeed = -h.maxMoveSpeed
-	case Down:
+	case types.GoSouth:
 		h.vertSpeed = h.maxMoveSpeed
-	case Left:
+	case types.GoWest:
 		h.horSpeed = -h.maxMoveSpeed
-	case Right:
+	case types.GoEast:
 		h.horSpeed = h.maxMoveSpeed
 	}
 }
-
-/* func (h *Hero) doCommand(cmd *Command) {
-	switch cmd.t {
-	case Jump:
-		h.jumpSpeed = h.maxJumpSpeed
-	case Up:
-		h.vertSpeed = -h.maxMoveSpeed
-	case Down:
-		h.vertSpeed = h.maxMoveSpeed
-	case Left:
-		h.horSpeed = -h.maxMoveSpeed
-	case Right:
-		h.horSpeed = h.maxMoveSpeed
-	}
-} */
 
 // Update updates state of the Hero.
 func (h *Hero) Update() {
@@ -130,32 +108,10 @@ func (h *Hero) Update() {
 
 	h.time++
 
-	// check commands
-	/* for cmdType, cmd := range h.commands {
-		// Time to live of the command is over,
-		// remove it from register.
-		if cmd.ttl <= 0 {
-			delete(h.commands, cmdType)
-			continue
-		}
-
-		isMoving := cmdType != Jump
-
-		// performs command in following cases:
-		// 1. Hero is standing on the ground
-		// 2. Hero has jumped and the gap between Jump and Move commands is within the boundaries of the Move's TTL
-		if h.altitude == 0 || isMoving {
-			h.doCommand(cmd)
-			delete(h.commands, cmdType)
-		}
-
-		cmd.ttl--
-	} */
-
 	if h.horSpeed != 0 || h.vertSpeed != 0 {
 		h.handleMove()
 	}
-	if h.crashingDepth == 0 && h.jumpSpeed != 0 {
+	if h.crashingDepth == 0 && h.altSpeed != 0 {
 		h.handleJump()
 	}
 	if h.crashingDepth != 0 {
@@ -204,13 +160,13 @@ func (h *Hero) resize() {
 	if h.altitude != 0 {
 		h.w = h.width + int32(h.altitude)
 		h.h = h.height + int32(h.altitude)
-		h.x = h.coordX - int32(h.altitude/2)
-		h.y = h.coordY - int32(h.altitude/2)
+		h.x = h.location.X - int32(h.altitude/2)
+		h.y = h.location.Y - int32(h.altitude/2)
 	} else if h.altitude == 0 {
 		h.h = h.height
 		h.w = h.width
-		h.x = h.coordX
-		h.y = h.coordY
+		h.x = h.location.X
+		h.y = h.location.Y
 	}
 }
 
@@ -229,11 +185,11 @@ func (h *Hero) clearRect(r *sdl.Renderer) error {
 func (h *Hero) handleCrash() {
 	// crashing
 	if h.altitude > h.crashingDepth {
-		h.jumpSpeed -= gravity
-		h.altitude += h.jumpSpeed
+		h.altSpeed -= gravity
+		h.altitude += int8(h.altSpeed)
 		h.resize()
 	} else { // crashed
-		h.jumpSpeed = 0
+		h.altSpeed = 0
 		h.altitude = h.crashingDepth
 		h.dead = true
 	}
@@ -241,31 +197,31 @@ func (h *Hero) handleCrash() {
 
 func (h *Hero) handleJump() {
 	// rising
-	if h.jumpSpeed > 0 {
+	if h.altSpeed > 0 {
 		// log.Printf("rising... %.2f\n", h.altitude)
-		h.altitude += h.jumpSpeed
+		h.altitude += int8(h.altSpeed)
 		h.resize()
-		h.jumpSpeed -= gravity
+		h.altSpeed -= gravity
 		return
 	}
 
 	// falling
-	if h.altitude > 0 && h.jumpSpeed <= 0 {
+	if h.altitude > 0 && h.altSpeed <= 0 {
 		// log.Printf("falling...%.2f\n", h.altitude)
-		h.altitude = math.Max(0, h.altitude+h.jumpSpeed)
+		h.altitude = int8(math.Max(0, float64(h.altitude)+float64(h.altSpeed)))
 		h.resize()
-		h.jumpSpeed -= gravity
+		h.altSpeed -= gravity
 		return
 	}
 
 	// landed
-	if h.altitude == 0 && h.jumpSpeed < 0 {
+	if h.altitude == 0 && h.altSpeed < 0 {
 		// log.Printf("landed...%.2f\n", h.altitude)
-		h.jumpSpeed = 0
+		h.altSpeed = 0
 		h.h = h.height
 		h.w = h.width
-		h.x = h.coordX
-		h.y = h.coordY
+		h.x = h.location.X
+		h.y = h.location.Y
 		return
 	}
 }
@@ -279,27 +235,32 @@ func (h *Hero) handleMove() {
 	}
 
 	if h.horSpeed != 0 {
-		h.coordX += int32(h.horSpeed)
+		h.location.X += int32(h.horSpeed)
 		h.x += int32(h.horSpeed)
 		if h.horSpeed > 0 {
-			h.horSpeed = math.Max(0, h.horSpeed-frict)
+			h.horSpeed = float32(math.Max(0, float64(h.horSpeed)-frict))
 		} else {
-			h.horSpeed = math.Min(0, h.horSpeed+frict)
+			h.horSpeed = float32(math.Min(0, float64(h.horSpeed)+frict))
 		}
 	}
 	if h.vertSpeed != 0 {
-		h.coordY += int32(h.vertSpeed)
+		h.location.Y += int32(h.vertSpeed)
 		h.y += int32(h.vertSpeed)
 		if h.vertSpeed > 0 {
-			h.vertSpeed = math.Max(0, h.vertSpeed-frict)
+			h.vertSpeed = float32(math.Max(0, float64(h.vertSpeed)-frict))
 		} else {
-			h.vertSpeed = math.Min(0, h.vertSpeed+frict)
+			h.vertSpeed = float32(math.Min(0, float64(h.vertSpeed)+frict))
 		}
 	}
 }
 
-// Touch ...
+// Touch checks collision with Pit.
 func (h *Hero) Touch(p *pit.Pit) {
+	// optimisation: do this expensive check only every 2nd time
+	if h.time / 2 != 0 {
+		return
+	}
+
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -320,7 +281,18 @@ func (h *Hero) Touch(p *pit.Pit) {
 	}
 
 	h.crashingDepth = p.Depth()
-	// h.dead = true
+}
+
+// Location returns a location of the Hero.
+func (h *Hero) Location() *sdl.Rect {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	if h.rect != nil {
+		return h.rect
+	}
+
+	return &sdl.Rect{X: h.x, Y: h.y, W: h.w, H: h.h}
 }
 
 // IsDead ....

@@ -7,7 +7,7 @@ import (
 	ttf "github.com/veandco/go-sdl2/ttf"
 )
 
-// DrawTitle ...
+// DrawTitle draws a title with given "text".
 func DrawTitle(r *sdl.Renderer, text string) error {
 	r.Clear()
 

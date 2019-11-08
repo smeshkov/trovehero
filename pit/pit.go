@@ -19,11 +19,11 @@ type Pit struct {
 	X, Y int32
 	W, H int32
 
-	depth float64
+	depth int8
 }
 
 // NewPit creates new instance of the Pit.
-func NewPit(x, y, height, width int32, depth float64) *Pit {
+func NewPit(x, y, height, width int32, depth int8) *Pit {
 	return &Pit{
 		X:     x - width/2,
 		Y:     y - height/2,
@@ -34,7 +34,10 @@ func NewPit(x, y, height, width int32, depth float64) *Pit {
 }
 
 // Depth tells how deep is the Pit.
-func (p *Pit) Depth() float64 {
+func (p *Pit) Depth() int8 {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	
 	return p.depth
 }
 
