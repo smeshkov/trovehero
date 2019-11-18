@@ -5,14 +5,116 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/smeshkov/trovehero/types"
+	"github.com/smeshkov/trovehero/types/direction"
 )
 
-func Test_directionCheck(t *testing.T) {
-	sightDistnace := int32(50)
-	oldDirection := types.South
-	
-	newDirection := directionCheck(oldDirection, sightDistnace, 50, 50, 200, 200)
+const testSightDistnace int32 = 50
 
-	assert.Equal(t, oldDirection, newDirection)
+type directionCheckTest struct {
+	name               string
+	x, y, areaH, areaW int32
+	input              direction.Type
+	expected           direction.Type
+}
+
+func Test_directionCheck(t *testing.T) {
+	tests := []directionCheckTest{
+		{
+			name:  "no change in direction to South",
+			x:     50,
+			y:     50,
+			areaH: 200,
+			areaW: 200,
+
+			input:    direction.South,
+			expected: direction.South,
+		},
+		{
+			name:  "change direction from South to West",
+			x:     100,
+			y:     50,
+			areaH: 100,
+			areaW: 200,
+
+			input:    direction.South,
+			expected: direction.West,
+		},
+		{
+			name:  "change direction from West to North",
+			x:     50,
+			y:     100,
+			areaH: 200,
+			areaW: 100,
+
+			input:    direction.West,
+			expected: direction.North,
+		},
+		{
+			name:  "change direction from North to East",
+			x:     50,
+			y:     50,
+			areaH: 100,
+			areaW: 200,
+
+			input:    direction.North,
+			expected: direction.East,
+		},
+		{
+			name:  "change direction from East to South",
+			x:     50,
+			y:     50,
+			areaH: 200,
+			areaW: 100,
+
+			input:    direction.East,
+			expected: direction.South,
+		},
+		{
+			name:  "left top corner: change direction from West to East",
+			x:     50,
+			y:     50,
+			areaH: 200,
+			areaW: 200,
+
+			input:    direction.West,
+			expected: direction.East,
+		},
+		{
+			name:  "right top corner: change direction from North to South",
+			x:     50,
+			y:     50,
+			areaH: 200,
+			areaW: 100,
+
+			input:    direction.North,
+			expected: direction.South,
+		},
+		{
+			name:  "right bottom corner: change direction from East to West",
+			x:     150,
+			y:     150,
+			areaH: 200,
+			areaW: 200,
+
+			input:    direction.East,
+			expected: direction.West,
+		},
+		{
+			name:  "left bottom corner: change direction from South to North",
+			x:     50,
+			y:     150,
+			areaH: 200,
+			areaW: 200,
+
+			input:    direction.South,
+			expected: direction.North,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := checkDirection(tt.input, testSightDistnace, tt.x, tt.y, tt.areaH, tt.areaW)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }

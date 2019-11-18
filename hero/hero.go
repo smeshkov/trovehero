@@ -9,7 +9,7 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 
 	"github.com/smeshkov/trovehero/pit"
-	"github.com/smeshkov/trovehero/types"
+	"github.com/smeshkov/trovehero/types/command"
 )
 
 const (
@@ -78,7 +78,7 @@ func NewHero(x, y int32) *Hero {
 }
 
 // Do performes command on a Hero.
-func (h *Hero) Do(t types.CommandType) {
+func (h *Hero) Do(t command.Type) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -88,15 +88,15 @@ func (h *Hero) Do(t types.CommandType) {
 	}
 
 	switch t {
-	case types.Jump:
+	case command.Jump:
 		h.altSpeed = h.maxJumpSpeed
-	case types.GoNorth:
+	case command.GoNorth:
 		h.vertSpeed = -h.maxMoveSpeed
-	case types.GoSouth:
+	case command.GoSouth:
 		h.vertSpeed = h.maxMoveSpeed
-	case types.GoWest:
+	case command.GoWest:
 		h.horSpeed = -h.maxMoveSpeed
-	case types.GoEast:
+	case command.GoEast:
 		h.horSpeed = h.maxMoveSpeed
 	}
 }

@@ -2,6 +2,7 @@ package enemy
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"sync"
@@ -11,7 +12,9 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 
 	"github.com/smeshkov/trovehero/hero"
-	"github.com/smeshkov/trovehero/types"
+	"github.com/smeshkov/trovehero/types/command"
+	"github.com/smeshkov/trovehero/types/direction"
+	"github.com/smeshkov/trovehero/types/shape"
 )
 
 const (
@@ -53,7 +56,7 @@ type Enemy struct {
 	// AI
 	sightDistnace int32
 	sightWidth    int32
-	direction     types.Direction
+	direction     direction.Type
 	player        *sdl.Rect
 	enemyMemory   int32
 
@@ -85,9 +88,9 @@ func NewEnemy(x, y int32, w *world.World) *Enemy {
 		w: width,
 
 		// AI
-		sightDistnace: 300,
-		sightWidth:    650,
-		direction:     types.West,
+		sightDistnace: 50,
+		sightWidth:    150,
+		direction:     direction.West,
 
 		// World
 		world: w,
@@ -98,25 +101,25 @@ func (e *Enemy) canSeeHero(hero *sdl.Rect) bool {
 	var triangle [3]*sdl.Point
 
 	switch e.direction {
-	case types.North:
+	case direction.North:
 		triangle = [3]*sdl.Point{
 			e.location,
 			&sdl.Point{X: e.location.X - e.sightWidth/2, Y: e.location.Y - e.sightDistnace},
 			&sdl.Point{X: e.location.X + e.sightWidth/2, Y: e.location.Y - e.sightDistnace},
 		}
-	case types.East:
+	case direction.East:
 		triangle = [3]*sdl.Point{
 			e.location,
 			&sdl.Point{X: e.location.X + e.sightDistnace, Y: e.location.Y - e.sightWidth/2},
 			&sdl.Point{X: e.location.X + e.sightDistnace, Y: e.location.Y + e.sightWidth/2},
 		}
-	case types.South:
+	case direction.South:
 		triangle = [3]*sdl.Point{
 			e.location,
 			&sdl.Point{X: e.location.X - e.sightWidth/2, Y: e.location.Y + e.sightDistnace},
 			&sdl.Point{X: e.location.X + e.sightWidth/2, Y: e.location.Y + e.sightDistnace},
 		}
-	case types.West:
+	case direction.West:
 		triangle = [3]*sdl.Point{
 			e.location,
 			&sdl.Point{X: e.location.X - e.sightDistnace, Y: e.location.Y - e.sightWidth/2},
@@ -125,10 +128,23 @@ func (e *Enemy) canSeeHero(hero *sdl.Rect) bool {
 	}
 
 	// Vicinity of the enemy
-	viewPort := types.NewTriangle(triangle, nil)
+	viewPort := shape.NewTriangle(triangle, nil)
 
 	// Is hero in the vicinity of enemy
 	return viewPort.OverlapsRect(hero)
+}
+
+func (e *Enemy) follow(x, y int32) direction.Type {
+	if e.location.X > x {
+		return direction.West
+	}
+	if e.location.X < x {
+		return direction.East
+	}
+	if e.location.Y > y {
+		return direction.North
+	}
+	return direction.South
 }
 
 // Watch checks if Enemy can see Hero.
@@ -139,8 +155,9 @@ func (e *Enemy) Watch(h *hero.Hero) {
 	heroLoc := h.Location()
 
 	if e.canSeeHero(heroLoc) {
-		e.enemyMemory = enemyMemory
-		e.direction = followHero(e.location, heroLoc)
+		log.Println("Enemy spotted Hero")
+		// e.enemyMemory = enemyMemory
+		e.direction = e.follow(heroLoc.X, heroLoc.Y)
 	}
 }
 
@@ -151,13 +168,13 @@ func (e *Enemy) Update() {
 
 	e.time++
 
-	if e.enemyMemory > 0 {
-		e.enemyMemory--
-	} else {
-		e.direction = directionCheck(e.direction, e.sightDistnace, e.location.X, e.location.Y, e.world.H, e.world.W)
-	}
+	// if e.enemyMemory > 0 {
+	// 	e.enemyMemory--
+	// }
 
-	if cmd, err := types.ToCommand(e.direction); err == nil {
+	e.direction = checkDirection(e.direction, e.sightDistnace, e.location.X, e.location.Y, e.world.H, e.world.W)
+
+	if cmd, err := command.ToCommand(e.direction); err == nil {
 		e.move(cmd)
 	} else {
 		fmt.Fprintf(os.Stderr, "enemy failed to convert direction to command: %v", err)
@@ -175,15 +192,15 @@ func (e *Enemy) Update() {
 }
 
 // move performes move command on an Enemy.
-func (e *Enemy) move(t types.CommandType) {
+func (e *Enemy) move(t command.Type) {
 	switch t {
-	case types.GoNorth:
+	case command.GoNorth:
 		e.vertSpeed = -e.maxMoveSpeed
-	case types.GoSouth:
+	case command.GoSouth:
 		e.vertSpeed = e.maxMoveSpeed
-	case types.GoWest:
+	case command.GoWest:
 		e.horSpeed = -e.maxMoveSpeed
-	case types.GoEast:
+	case command.GoEast:
 		e.horSpeed = e.maxMoveSpeed
 	}
 }

@@ -1,36 +1,25 @@
 package enemy
 
 import (
-	"github.com/veandco/go-sdl2/sdl"
-
-	"github.com/smeshkov/trovehero/types"
+	"github.com/smeshkov/trovehero/types/direction"
 )
 
-func followHero(enemy *sdl.Point, hero *sdl.Rect) types.Direction {
-	if enemy.X > hero.X {
-		return types.West
-	}
-	if enemy.X < hero.X {
-		return types.East
-	}
-	if enemy.Y > hero.Y {
-		return types.North
-	}
-	return types.South
-}
+func checkDirection(ed direction.Type, sight, eX, eY, wH, wW int32) direction.Type {
+	d := ed
 
-func directionCheck(ed types.Direction, sight, eX, eY, wH, wW int32) types.Direction {
-	if ed == types.North && eY-enemyHeight/2-sight <= 0 {
-		return types.East
+	for i := 0; i < 3; i++ {
+
+		if d == direction.North && eY-enemyHeight/2-sight <= 0 {
+			d = direction.East
+		} else if d == direction.East && eX+enemyWidth/2+sight >= wW {
+			d = direction.South
+		} else if d == direction.South && eY+enemyHeight/2+sight >= wH {
+			d = direction.West
+		} else if d == direction.West && eX-enemyHeight/2-sight <= 0 {
+			d = direction.North
+		}
+
 	}
-	if ed == types.East && eX+enemyWidth/2+sight >= wW {
-		return types.South
-	}
-	if ed == types.South && eY+enemyHeight/2+sight >= wH {
-		return types.West
-	}
-	if ed == types.West && eX-enemyHeight/2-sight <= 0 {
-		return types.North
-	}
-	return ed
+
+	return d
 }

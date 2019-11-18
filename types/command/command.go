@@ -1,12 +1,14 @@
-package types
+package command
 
 import (
 	"fmt"
+
+	"github.com/smeshkov/trovehero/types/direction"
 )
 
 const (
 	// GoNorth makes Hero to move North.
-	GoNorth CommandType = iota
+	GoNorth Type = iota
 	// GoEast makes Hero to move East.
 	GoEast
 	// GoSouth makes Hero to move South.
@@ -20,7 +22,7 @@ const (
 )
 
 var (
-	commandTypeNames = map[CommandType]string{
+	typeNames = map[Type]string{
 		GoNorth: "GoNorth",
 		GoEast:  "GoEast",
 		GoSouth: "GoSouth",
@@ -30,27 +32,27 @@ var (
 	}
 )
 
-// CommandType is a type of a command.
-type CommandType byte
+// Type is a type of a command.
+type Type byte
 
-// ToCommand transforms a Direction into a CommandType.
-func ToCommand(d Direction) (CommandType, error) {
+// ToCommand transforms a direction type into a command type.
+func ToCommand(d direction.Type) (Type, error) {
 	switch d {
-	case North:
+	case direction.North:
 		return GoNorth, nil
-	case East:
+	case direction.East:
 		return GoEast, nil
-	case South:
+	case direction.South:
 		return GoSouth, nil
-	case West:
+	case direction.West:
 		return GoWest, nil
 	}
 	return 0, fmt.Errorf("Unknown direction %s with code %d", d, d)
 }
 
-func (ct CommandType) String() string {
-	if ct < GoNorth || ct > Shoot {
+func (t Type) String() string {
+	if t < GoNorth || t > Shoot {
 		return "Unknown"
 	}
-	return commandTypeNames[ct]
+	return typeNames[t]
 }

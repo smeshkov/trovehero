@@ -1,8 +1,8 @@
-package types
+package direction
 
 const (
 	// North direction.
-	North Direction = iota
+	North Type = iota
 	// East direction.
 	East
 	// South direction.
@@ -12,7 +12,7 @@ const (
 )
 
 var (
-	directionNames = map[Direction]string{
+	typeNames = map[Type]string{
 		North: "North",
 		East:  "East",
 		South: "South",
@@ -20,12 +20,12 @@ var (
 	}
 )
 
-// Direction is a direction.
-type Direction byte
+// Type is a type of direction.
+type Type byte
 
-func (d Direction) String() string {
-	if d < North || d > West {
+func (t Type) String() string {
+	if t < North || t > West {
 		return "Unknown"
 	}
-	return directionNames[d]
+	return typeNames[t]
 }
