@@ -52,8 +52,8 @@ type Enemy struct {
 	sightDistnace int32
 	sightWidth    int32
 	direction     direction.Type
-	player        *sdl.Rect
-	enemyMemory   int32
+	// player        *sdl.Rect
+	// enemyMemory   int32
 
 	// World
 	world *world.World
@@ -167,7 +167,6 @@ func (e *Enemy) Watch(h *hero.Hero) {
 	heroLoc := h.Location()
 
 	if e.canSeeHero(heroLoc) {
-		// e.enemyMemory = enemyMemory
 		e.directTo(heroLoc.X, heroLoc.Y)
 	}
 }
@@ -178,10 +177,6 @@ func (e *Enemy) Update() {
 	defer e.mu.Unlock()
 
 	e.time++
-
-	// if e.enemyMemory > 0 {
-	// 	e.enemyMemory--
-	// }
 
 	e.directionCheck()
 
@@ -247,12 +242,6 @@ func (e *Enemy) Paint(r *sdl.Renderer) error {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
-	// remove previous rectangle
-	err := e.clearRect(r)
-	if err != nil {
-		return err
-	}
-
 	// fill new rectangle
 	r.SetDrawColor(0, 128, 0, 255)
 	r.FillRect(e.getShape())
@@ -266,28 +255,16 @@ func (e *Enemy) getShape() *sdl.Rect {
 		return &sdl.Rect{
 			X: e.x - int32(e.altitude/2),
 			Y: e.y - int32(e.altitude/2),
-			W: e.width + int32(e.altitude),
-			H: e.height + int32(e.altitude),
+			W: e.w + int32(e.altitude),
+			H: e.h + int32(e.altitude),
 		}
 	}
 	return &sdl.Rect{
 		X: e.x,
 		Y: e.y,
-		W: e.width,
-		H: e.height,
+		W: e.w,
+		H: e.h,
 	}
-}
-
-func (e *Enemy) clearRect(r *sdl.Renderer) error {
-	err := r.SetDrawColor(0, 0, 0, 0)
-	if err != nil {
-		return fmt.Errorf("could not set draw color: %w", err)
-	}
-	err = r.FillRect(e.getShape())
-	if err != nil {
-		return fmt.Errorf("could not fill rectangle: %w", err)
-	}
-	return nil
 }
 
 // Restart restarts state of Enemy.

@@ -1,8 +1,6 @@
 package hero
 
 import (
-	// "log"
-	"fmt"
 	"math"
 	"sync"
 
@@ -115,12 +113,6 @@ func (h *Hero) Paint(r *sdl.Renderer) error {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
-	// remove previous rectangle
-	err := h.clearRect(r)
-	if err != nil {
-		return err
-	}
-
 	// fill new rectangle
 	r.SetDrawColor(255, 100, 0, 255)
 	r.FillRect(h.getShape())
@@ -151,28 +143,16 @@ func (h *Hero) getShape() *sdl.Rect {
 		return &sdl.Rect{
 			X: h.x - int32(h.altitude/2),
 			Y: h.y - int32(h.altitude/2),
-			W: h.width + int32(h.altitude),
-			H: h.height + int32(h.altitude),
+			W: h.w + int32(h.altitude),
+			H: h.h + int32(h.altitude),
 		}
 	}
 	return &sdl.Rect{
 		X: h.x,
 		Y: h.y,
-		W: h.width,
-		H: h.height,
+		W: h.w,
+		H: h.h,
 	}
-}
-
-func (h *Hero) clearRect(r *sdl.Renderer) error {
-	err := r.SetDrawColor(0, 0, 0, 0)
-	if err != nil {
-		return fmt.Errorf("could not set draw color: %w", err)
-	}
-	err = r.FillRect(h.getShape())
-	if err != nil {
-		return fmt.Errorf("could not fill rectangle: %w", err)
-	}
-	return nil
 }
 
 func (h *Hero) handleCrash() {
@@ -237,11 +217,6 @@ func (h *Hero) handleMove() {
 
 // Touch checks collision with Pit.
 func (h *Hero) Touch(p *pit.Pit) {
-	// optimisation: do this expensive check only every 2nd time
-	if h.time/2 != 0 {
-		return
-	}
-
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
