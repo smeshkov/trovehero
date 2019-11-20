@@ -26,9 +26,6 @@ type Hero struct {
 
 	time int64
 
-	// tools
-	rect *sdl.Rect
-
 	// properties
 	height       int32
 	width        int32
@@ -36,7 +33,6 @@ type Hero struct {
 	maxJumpSpeed float32
 
 	// coordinates
-	location *sdl.Point
 	altitude int8
 
 	// shape
@@ -56,8 +52,6 @@ type Hero struct {
 func NewHero(x, y int32) *Hero {
 	var heroWidth int32 = 50
 	var heroHeight int32 = 50
-	var coordX int32 = x - heroWidth/2
-	var coordY int32 = y - heroHeight/2
 
 	return &Hero{
 		// properties
@@ -66,12 +60,9 @@ func NewHero(x, y int32) *Hero {
 		maxMoveSpeed: 4,
 		maxJumpSpeed: 4,
 
-		// coordinates
-		location: &sdl.Point{X: coordX, Y: coordY},
-
-		// speed
-		x: coordX,
-		y: coordY,
+		// shape
+		x: x,
+		y: y,
 		h: heroHeight,
 		w: heroWidth,
 	}
@@ -132,8 +123,7 @@ func (h *Hero) Paint(r *sdl.Renderer) error {
 
 	// fill new rectangle
 	r.SetDrawColor(255, 100, 0, 255)
-	h.rect = &sdl.Rect{X: h.x, Y: h.y, W: h.w, H: h.h}
-	r.FillRect(h.rect)
+	r.FillRect(h.getShape())
 	r.SetDrawColor(0, 0, 0, 255)
 
 	// i := b.time / 10 % len(b.textures)
@@ -156,17 +146,20 @@ func (h *Hero) Destroy() {
 	// noop
 }
 
-func (h *Hero) resize() {
+func (h *Hero) getShape() *sdl.Rect {
 	if h.altitude != 0 {
-		h.w = h.width + int32(h.altitude)
-		h.h = h.height + int32(h.altitude)
-		h.x = h.location.X - int32(h.altitude/2)
-		h.y = h.location.Y - int32(h.altitude/2)
-	} else if h.altitude == 0 {
-		h.h = h.height
-		h.w = h.width
-		h.x = h.location.X
-		h.y = h.location.Y
+		return &sdl.Rect{
+			X: h.x - int32(h.altitude/2),
+			Y: h.y - int32(h.altitude/2),
+			W: h.width + int32(h.altitude),
+			H: h.height + int32(h.altitude),
+		}
+	}
+	return &sdl.Rect{
+		X: h.x,
+		Y: h.y,
+		W: h.width,
+		H: h.height,
 	}
 }
 
@@ -175,7 +168,7 @@ func (h *Hero) clearRect(r *sdl.Renderer) error {
 	if err != nil {
 		return fmt.Errorf("could not set draw color: %w", err)
 	}
-	err = r.FillRect(h.rect)
+	err = r.FillRect(h.getShape())
 	if err != nil {
 		return fmt.Errorf("could not fill rectangle: %w", err)
 	}
@@ -187,7 +180,6 @@ func (h *Hero) handleCrash() {
 	if h.altitude > h.crashingDepth {
 		h.altSpeed -= gravity
 		h.altitude += int8(h.altSpeed)
-		h.resize()
 	} else { // crashed
 		h.altSpeed = 0
 		h.altitude = h.crashingDepth
@@ -198,30 +190,21 @@ func (h *Hero) handleCrash() {
 func (h *Hero) handleJump() {
 	// rising
 	if h.altSpeed > 0 {
-		// log.Printf("rising... %.2f\n", h.altitude)
 		h.altitude += int8(h.altSpeed)
-		h.resize()
 		h.altSpeed -= gravity
 		return
 	}
 
 	// falling
 	if h.altitude > 0 && h.altSpeed <= 0 {
-		// log.Printf("falling...%.2f\n", h.altitude)
 		h.altitude = int8(math.Max(0, float64(h.altitude)+float64(h.altSpeed)))
-		h.resize()
 		h.altSpeed -= gravity
 		return
 	}
 
 	// landed
 	if h.altitude == 0 && h.altSpeed < 0 {
-		// log.Printf("landed...%.2f\n", h.altitude)
 		h.altSpeed = 0
-		h.h = h.height
-		h.w = h.width
-		h.x = h.location.X
-		h.y = h.location.Y
 		return
 	}
 }
@@ -235,7 +218,6 @@ func (h *Hero) handleMove() {
 	}
 
 	if h.horSpeed != 0 {
-		h.location.X += int32(h.horSpeed)
 		h.x += int32(h.horSpeed)
 		if h.horSpeed > 0 {
 			h.horSpeed = float32(math.Max(0, float64(h.horSpeed)-frict))
@@ -244,7 +226,6 @@ func (h *Hero) handleMove() {
 		}
 	}
 	if h.vertSpeed != 0 {
-		h.location.Y += int32(h.vertSpeed)
 		h.y += int32(h.vertSpeed)
 		if h.vertSpeed > 0 {
 			h.vertSpeed = float32(math.Max(0, float64(h.vertSpeed)-frict))
@@ -257,7 +238,7 @@ func (h *Hero) handleMove() {
 // Touch checks collision with Pit.
 func (h *Hero) Touch(p *pit.Pit) {
 	// optimisation: do this expensive check only every 2nd time
-	if h.time / 2 != 0 {
+	if h.time/2 != 0 {
 		return
 	}
 
@@ -287,11 +268,6 @@ func (h *Hero) Touch(p *pit.Pit) {
 func (h *Hero) Location() *sdl.Rect {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-
-	if h.rect != nil {
-		return h.rect
-	}
-
 	return &sdl.Rect{X: h.x, Y: h.y, W: h.w, H: h.h}
 }
 

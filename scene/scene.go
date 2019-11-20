@@ -24,7 +24,7 @@ import (
 	"github.com/smeshkov/trovehero/enemy"
 	"github.com/smeshkov/trovehero/hero"
 	"github.com/smeshkov/trovehero/pit"
-	"github.com/smeshkov/trovehero/types"
+	"github.com/smeshkov/trovehero/types/command"
 	"github.com/smeshkov/trovehero/world"
 )
 
@@ -118,15 +118,15 @@ func (s *Scene) handleKeyboardEvent(event *sdl.KeyboardEvent) bool {
 	case sdl.SCANCODE_ESCAPE:
 		return true
 	case sdl.SCANCODE_SPACE:
-		s.hero.Do(types.Jump)
+		s.hero.Do(command.Jump)
 	case sdl.SCANCODE_LEFT:
-		s.hero.Do(types.GoWest)
+		s.hero.Do(command.GoWest)
 	case sdl.SCANCODE_RIGHT:
-		s.hero.Do(types.GoEast)
+		s.hero.Do(command.GoEast)
 	case sdl.SCANCODE_UP:
-		s.hero.Do(types.GoNorth)
+		s.hero.Do(command.GoNorth)
 	case sdl.SCANCODE_DOWN:
-		s.hero.Do(types.GoSouth)
+		s.hero.Do(command.GoSouth)
 	}
 	return false
 }

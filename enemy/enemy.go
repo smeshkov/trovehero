@@ -2,7 +2,6 @@ package enemy
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"os"
 	"sync"
@@ -31,9 +30,6 @@ type Enemy struct {
 
 	time int64
 
-	// tools
-	rect *sdl.Rect
-
 	// properties
 	height       int32
 	width        int32
@@ -41,7 +37,6 @@ type Enemy struct {
 	maxJumpSpeed float32
 
 	// coordinates
-	location *sdl.Point
 	altitude float64
 
 	// shape
@@ -68,8 +63,6 @@ type Enemy struct {
 func NewEnemy(x, y int32, w *world.World) *Enemy {
 	var width int32 = enemyWidth
 	var height int32 = enemyHeight
-	var coordX int32 = x - width/2
-	var coordY int32 = y - height/2
 
 	return &Enemy{
 		// properties
@@ -78,12 +71,9 @@ func NewEnemy(x, y int32, w *world.World) *Enemy {
 		maxMoveSpeed: 2,
 		maxJumpSpeed: 1,
 
-		// coordinates
-		location: &sdl.Point{X: coordX, Y: coordY},
-
 		// shape
-		x: coordX,
-		y: coordY,
+		x: x,
+		y: y,
 		h: height,
 		w: width,
 
@@ -100,30 +90,33 @@ func NewEnemy(x, y int32, w *world.World) *Enemy {
 func (e *Enemy) canSeeHero(hero *sdl.Rect) bool {
 	var triangle [3]*sdl.Point
 
+	location := &sdl.Point{X: e.x + e.width/2, Y: e.y + e.height/2}
+
+	// create triangle view, depending on which direction is facing
 	switch e.direction {
 	case direction.North:
 		triangle = [3]*sdl.Point{
-			e.location,
-			&sdl.Point{X: e.location.X - e.sightWidth/2, Y: e.location.Y - e.sightDistnace},
-			&sdl.Point{X: e.location.X + e.sightWidth/2, Y: e.location.Y - e.sightDistnace},
+			location,
+			&sdl.Point{X: location.X - e.sightWidth/2, Y: location.Y - e.sightDistnace},
+			&sdl.Point{X: location.X + e.sightWidth/2, Y: location.Y - e.sightDistnace},
 		}
 	case direction.East:
 		triangle = [3]*sdl.Point{
-			e.location,
-			&sdl.Point{X: e.location.X + e.sightDistnace, Y: e.location.Y - e.sightWidth/2},
-			&sdl.Point{X: e.location.X + e.sightDistnace, Y: e.location.Y + e.sightWidth/2},
+			location,
+			&sdl.Point{X: location.X + e.sightDistnace, Y: location.Y - e.sightWidth/2},
+			&sdl.Point{X: location.X + e.sightDistnace, Y: location.Y + e.sightWidth/2},
 		}
 	case direction.South:
 		triangle = [3]*sdl.Point{
-			e.location,
-			&sdl.Point{X: e.location.X - e.sightWidth/2, Y: e.location.Y + e.sightDistnace},
-			&sdl.Point{X: e.location.X + e.sightWidth/2, Y: e.location.Y + e.sightDistnace},
+			location,
+			&sdl.Point{X: location.X - e.sightWidth/2, Y: location.Y + e.sightDistnace},
+			&sdl.Point{X: location.X + e.sightWidth/2, Y: location.Y + e.sightDistnace},
 		}
 	case direction.West:
 		triangle = [3]*sdl.Point{
-			e.location,
-			&sdl.Point{X: e.location.X - e.sightDistnace, Y: e.location.Y - e.sightWidth/2},
-			&sdl.Point{X: e.location.X - e.sightDistnace, Y: e.location.Y + e.sightWidth/2},
+			location,
+			&sdl.Point{X: location.X - e.sightDistnace, Y: location.Y - e.sightWidth/2},
+			&sdl.Point{X: location.X - e.sightDistnace, Y: location.Y + e.sightWidth/2},
 		}
 	}
 
@@ -134,17 +127,36 @@ func (e *Enemy) canSeeHero(hero *sdl.Rect) bool {
 	return viewPort.OverlapsRect(hero)
 }
 
-func (e *Enemy) follow(x, y int32) direction.Type {
-	if e.location.X > x {
-		return direction.West
+func (e *Enemy) directTo(x, y int32) {
+	if e.x+e.width > x {
+		e.direction = direction.West
 	}
-	if e.location.X < x {
-		return direction.East
+	if e.x < x {
+		e.direction = direction.East
 	}
-	if e.location.Y > y {
-		return direction.North
+	if e.y+e.height > y {
+		e.direction = direction.North
 	}
-	return direction.South
+	if e.y < y {
+		e.direction = direction.South
+	}
+}
+
+func (e *Enemy) directionCheck() {
+
+	for i := 0; i < 3; i++ {
+
+		if e.direction == direction.North && e.y-e.sightDistnace <= 0 {
+			e.direction = direction.East
+		} else if e.direction == direction.East && e.x+e.width+e.sightDistnace >= e.world.W {
+			e.direction = direction.South
+		} else if e.direction == direction.South && e.y+e.height+e.sightDistnace >= e.world.H {
+			e.direction = direction.West
+		} else if e.direction == direction.West && e.x-e.sightDistnace <= 0 {
+			e.direction = direction.North
+		}
+
+	}
 }
 
 // Watch checks if Enemy can see Hero.
@@ -155,9 +167,8 @@ func (e *Enemy) Watch(h *hero.Hero) {
 	heroLoc := h.Location()
 
 	if e.canSeeHero(heroLoc) {
-		log.Println("Enemy spotted Hero")
 		// e.enemyMemory = enemyMemory
-		e.direction = e.follow(heroLoc.X, heroLoc.Y)
+		e.directTo(heroLoc.X, heroLoc.Y)
 	}
 }
 
@@ -172,7 +183,7 @@ func (e *Enemy) Update() {
 	// 	e.enemyMemory--
 	// }
 
-	e.direction = checkDirection(e.direction, e.sightDistnace, e.location.X, e.location.Y, e.world.H, e.world.W)
+	e.directionCheck()
 
 	if cmd, err := command.ToCommand(e.direction); err == nil {
 		e.move(cmd)
@@ -214,7 +225,6 @@ func (e *Enemy) handleMove() {
 	}
 
 	if e.horSpeed != 0 {
-		e.location.X += int32(e.horSpeed)
 		e.x += int32(e.horSpeed)
 		if e.horSpeed > 0 {
 			e.horSpeed = float32(math.Max(0, float64(e.horSpeed)-frict))
@@ -223,7 +233,6 @@ func (e *Enemy) handleMove() {
 		}
 	}
 	if e.vertSpeed != 0 {
-		e.location.Y += int32(e.vertSpeed)
 		e.y += int32(e.vertSpeed)
 		if e.vertSpeed > 0 {
 			e.vertSpeed = float32(math.Max(0, float64(e.vertSpeed)-frict))
@@ -246,11 +255,27 @@ func (e *Enemy) Paint(r *sdl.Renderer) error {
 
 	// fill new rectangle
 	r.SetDrawColor(0, 128, 0, 255)
-	e.rect = &sdl.Rect{X: e.x, Y: e.y, W: e.w, H: e.h}
-	r.FillRect(e.rect)
+	r.FillRect(e.getShape())
 	r.SetDrawColor(0, 0, 0, 255)
 
 	return nil
+}
+
+func (e *Enemy) getShape() *sdl.Rect {
+	if e.altitude != 0 {
+		return &sdl.Rect{
+			X: e.x - int32(e.altitude/2),
+			Y: e.y - int32(e.altitude/2),
+			W: e.width + int32(e.altitude),
+			H: e.height + int32(e.altitude),
+		}
+	}
+	return &sdl.Rect{
+		X: e.x,
+		Y: e.y,
+		W: e.width,
+		H: e.height,
+	}
 }
 
 func (e *Enemy) clearRect(r *sdl.Renderer) error {
@@ -258,7 +283,7 @@ func (e *Enemy) clearRect(r *sdl.Renderer) error {
 	if err != nil {
 		return fmt.Errorf("could not set draw color: %w", err)
 	}
-	err = r.FillRect(e.rect)
+	err = r.FillRect(e.getShape())
 	if err != nil {
 		return fmt.Errorf("could not fill rectangle: %w", err)
 	}
