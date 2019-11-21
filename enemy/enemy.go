@@ -61,30 +61,35 @@ type Enemy struct {
 
 // NewEnemy creates new instance of Enemy in given coordinates.
 func NewEnemy(x, y int32, w *world.World) *Enemy {
-	var width int32 = enemyWidth
-	var height int32 = enemyHeight
+	e := &Enemy{}
+	return e.setDefaults(x, y, enemyWidth, enemyHeight, w)
+}
 
-	return &Enemy{
-		// properties
-		height:       height,
-		width:        width,
-		maxMoveSpeed: 2,
-		maxJumpSpeed: 1,
+func (e *Enemy) setDefaults(x, y, width, height int32, w *world.World) *Enemy {
+	e.time = 0
 
-		// shape
-		x: x,
-		y: y,
-		h: height,
-		w: width,
+	e.height = height
+	e.width = width
+	e.maxMoveSpeed = 2
+	e.maxJumpSpeed = 1
 
-		// AI
-		sightDistnace: 50,
-		sightWidth:    150,
-		direction:     direction.West,
+	e.altitude = 0
 
-		// World
-		world: w,
-	}
+	// shape
+	e.x = x
+	e.y = y
+	e.h = height
+	e.w = width
+
+	// AI
+	e.sightDistnace = 50
+	e.sightWidth = 150
+	e.direction = direction.West
+
+	// World
+	e.world = w
+
+	return e
 }
 
 func (e *Enemy) canSeeHero(hero *sdl.Rect) bool {
@@ -271,8 +276,7 @@ func (e *Enemy) getShape() *sdl.Rect {
 func (e *Enemy) Restart() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-
-	e = NewEnemy(30, 30, e.world)
+	e.setDefaults(30, 30, enemyWidth, enemyHeight, e.world)
 }
 
 // Destroy removes Enemy.

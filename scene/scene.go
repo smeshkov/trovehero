@@ -1,6 +1,7 @@
 package scene
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -53,9 +54,14 @@ func (s *Scene) Run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 				s.update()
 
 				if s.hero.IsDead() {
-					DrawTitle(r, "Game Over")
+					fmt.Println("drawing Game Over")
+					if err := DrawTitle(r, "Game Over"); err != nil {
+						errc <- err	
+					}
 					time.Sleep(1 * time.Second)
+					fmt.Println("restarting")
 					s.restart()
+					fmt.Println("restarted")
 				}
 
 				if err := s.paint(r); err != nil {

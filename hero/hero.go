@@ -48,22 +48,35 @@ type Hero struct {
 
 // NewHero creates new instance of Hero in given coordinates.
 func NewHero(x, y int32) *Hero {
-	var heroWidth int32 = 50
-	var heroHeight int32 = 50
+	h := &Hero{}
+	return h.setDefaults(x, y, 50, 50)
+}
 
-	return &Hero{
-		// properties
-		height:       heroHeight,
-		width:        heroWidth,
-		maxMoveSpeed: 4,
-		maxJumpSpeed: 4,
+func (h *Hero) setDefaults(x, y, heroWidth, heroHeight int32) *Hero {
+	h.time = 0
 
-		// shape
-		x: x,
-		y: y,
-		h: heroHeight,
-		w: heroWidth,
-	}
+	// properties
+	h.height = heroHeight
+	h.width = heroWidth
+	h.maxMoveSpeed = 4
+	h.maxJumpSpeed = 4
+
+	h.altitude = 0
+
+	// shape
+	h.x = x
+	h.y = y
+	h.h = heroHeight
+	h.w = heroWidth
+
+	h.vertSpeed = 0
+	h.horSpeed = 0
+	h.altSpeed = 0
+
+	h.crashingDepth = 0
+	h.dead = false
+
+	return h
 }
 
 // Do performes command on a Hero.
@@ -129,8 +142,7 @@ func (h *Hero) Paint(r *sdl.Renderer) error {
 func (h *Hero) Restart() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-
-	h = NewHero(800/2, 550)
+	h.setDefaults(1024/2, 550, 50, 50)
 }
 
 // Destroy removes Hero.
