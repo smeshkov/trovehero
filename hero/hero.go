@@ -255,7 +255,7 @@ func (h *Hero) Touch(p *pit.Pit) {
 func (h *Hero) Location() *sdl.Rect {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	return &sdl.Rect{X: h.x, Y: h.y, W: h.w, H: h.h}
+	return h.getShape()
 }
 
 // IsDead ....
@@ -263,4 +263,11 @@ func (h *Hero) IsDead() bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	return h.dead
+}
+
+// Die ....
+func (h *Hero) Die() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.dead = true
 }

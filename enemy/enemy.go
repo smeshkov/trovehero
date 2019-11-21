@@ -164,6 +164,30 @@ func (e *Enemy) directionCheck() {
 	}
 }
 
+// Touch checks collision with Pit.
+func (e *Enemy) Touch(h *hero.Hero) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	heroLoc := h.Location()
+
+	if e.x > heroLoc.X+heroLoc.W { // too far right
+		return
+	}
+	if e.x+e.w < heroLoc.X { // too far left
+		return
+	}
+	if e.y > heroLoc.Y+heroLoc.H { // too far below
+		return
+	}
+	if e.y+e.h < heroLoc.Y { // to far above
+		return
+	}
+
+	// Hero is busted, so he dies
+	h.Die()
+}
+
 // Watch checks if Enemy can see Hero.
 func (e *Enemy) Watch(h *hero.Hero) {
 	e.mu.Lock()

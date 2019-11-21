@@ -9,7 +9,9 @@ import (
 
 // DrawTitle draws a title with given "text".
 func DrawTitle(r *sdl.Renderer, text string) error {
-	r.Clear()
+	if err := r.Clear(); err != nil {
+		return fmt.Errorf("could not clear renderer: %w", err)
+	}
 
 	f, err := ttf.OpenFont("res/fonts/Flappy.ttf", 20)
 	if err != nil {

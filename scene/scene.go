@@ -1,7 +1,6 @@
 package scene
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -34,7 +33,7 @@ func NewScene(r *sdl.Renderer) (*Scene, error) {
 	h := hero.NewHero(w.W/2, 700)
 	e := enemy.NewEnemy(30, 30, w)
 
-	return &Scene{ hero: h, pit: p, enemy: e}, nil
+	return &Scene{hero: h, pit: p, enemy: e}, nil
 }
 
 // Run runs the Scene.
@@ -54,14 +53,11 @@ func (s *Scene) Run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 				s.update()
 
 				if s.hero.IsDead() {
-					fmt.Println("drawing Game Over")
 					if err := DrawTitle(r, "Game Over"); err != nil {
-						errc <- err	
+						errc <- err
 					}
 					time.Sleep(1 * time.Second)
-					fmt.Println("restarting")
 					s.restart()
-					fmt.Println("restarted")
 				}
 
 				if err := s.paint(r); err != nil {
@@ -114,6 +110,7 @@ func (s *Scene) update() {
 	s.enemy.Update()
 	s.pit.Update()
 	s.hero.Touch(s.pit)
+	s.enemy.Touch(s.hero)
 	s.enemy.Watch(s.hero)
 }
 
