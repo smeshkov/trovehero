@@ -209,7 +209,7 @@ func (e *Enemy) Update() {
 
 	e.directionCheck()
 
-	if cmd, err := command.ToCommand(e.direction); err == nil {
+	if cmd, err := command.FromDirection(e.direction); err == nil {
 		e.move(cmd)
 	} else {
 		fmt.Fprintf(os.Stderr, "enemy failed to convert direction to command: %v", err)

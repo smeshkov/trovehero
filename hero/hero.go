@@ -1,6 +1,7 @@
 package hero
 
 import (
+	"fmt"
 	"math"
 	"sync"
 
@@ -83,6 +84,11 @@ func (h *Hero) setDefaults(x, y, heroWidth, heroHeight int32) *Hero {
 func (h *Hero) Do(t command.Type) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+
+	if t == command.Shoot {
+		fmt.Println("shoot")
+		return
+	}
 
 	// can't move if not within alowed marging from the ground
 	if h.altitude > altitudeMargin {

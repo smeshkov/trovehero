@@ -35,8 +35,8 @@ var (
 // Type is a type of a command.
 type Type byte
 
-// ToCommand transforms a direction type into a command type.
-func ToCommand(d direction.Type) (Type, error) {
+// FromDirection transforms a direction type into a command type.
+func FromDirection(d direction.Type) (Type, error) {
 	switch d {
 	case direction.North:
 		return GoNorth, nil

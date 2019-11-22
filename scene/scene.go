@@ -101,6 +101,8 @@ func (s *Scene) handleKeyboardEvent(event *sdl.KeyboardEvent) bool {
 		s.hero.Do(command.GoNorth)
 	case sdl.SCANCODE_DOWN:
 		s.hero.Do(command.GoSouth)
+	case sdl.SCANCODE_LGUI, sdl.SCANCODE_RGUI:
+		s.hero.Do(command.Shoot)
 	}
 	return false
 }
