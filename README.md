@@ -1,6 +1,7 @@
 # Trove Hero
 
-An attempt to build a top down game. Inspired by set of videos by [Francesc Campoy](https://campoy.cat/) - [Flappy Gopher](https://github.com/campoy/flappy-gopher).
+An attempt to build a top down adventure game. 
+Inspired by set of videos by [Francesc Campoy](https://campoy.cat/) - [Flappy Gopher](https://github.com/campoy/flappy-gopher).
 
 ## Playing game
 
