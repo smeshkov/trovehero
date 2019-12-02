@@ -7,9 +7,6 @@ env:
   - GO111MODULE=on
 
 before_install:
-  - sudo apt-get update
-  - sudo apt-get -y install libsdl2{,-image,-mixer,-ttf,-gfx}-dev
-  - go get -v github.com/veandco/go-sdl2/{sdl,img,mix,ttf}
   - go get -t -v ./...
 
 script: 
@@ -19,6 +16,7 @@ after_success:
   - bash <(curl -s https://codecov.io/bash)
 
 before_deploy:
+  - ./_bin/deps.sh
   - ./_bin/build.sh darwin ${TRAVIS_TAG}
   - ./_bin/build.sh linux ${TRAVIS_TAG}
   - ./_bin/build.sh windows ${TRAVIS_TAG}
