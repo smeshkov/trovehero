@@ -17,4 +17,4 @@ if [ ! -d "$DIST_DIR" ]; then
   mkdir -p $DIST_DIR
 fi
 
-env GOOS=${OS} GOARCH=amd64 CGO_ENABLED=1 go build -v -o ${DIST_DIR}/${BINARY}_${OS}${VERSION} .
+env GOOS=${OS} GOARCH=amd64 CGO_ENABLED=0 go build -v -o ${DIST_DIR}/${BINARY}_${OS}${VERSION} .
