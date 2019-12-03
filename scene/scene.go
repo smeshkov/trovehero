@@ -78,7 +78,8 @@ func (s *Scene) handleEvent(event sdl.Event) bool {
 		return true
 	case *sdl.KeyboardEvent:
 		return s.handleKeyboardEvent(event.(*sdl.KeyboardEvent))
-	case *sdl.MouseMotionEvent, *sdl.WindowEvent, *sdl.TouchFingerEvent, *sdl.CommonEvent, *sdl.AudioDeviceEvent:
+	case *sdl.MouseMotionEvent, *sdl.WindowEvent, *sdl.TouchFingerEvent,
+		*sdl.CommonEvent, *sdl.AudioDeviceEvent, *sdl.TextInputEvent:
 	default:
 		log.Printf("unknown event %T", event)
 	}
