@@ -1,5 +1,7 @@
 #!/bin/sh
 
+bash deps.sh
+
 DIST_DIR="_dist"
 BINARY="trovehero"
 OS="$1"
