@@ -15,8 +15,8 @@ func newEnemy() *Enemy {
 		sightDistnace: 50,
 		sightWidth:    150,
 		direction:     direction.North,
-		x: 100,
-		y: 100,
+		x:             100,
+		y:             100,
 	}
 }
 
@@ -148,9 +148,9 @@ func Test_directionCheck(t *testing.T) {
 			e := &Enemy{
 				sightDistnace: testSightDistnace,
 				direction:     tt.input,
-				x: tt.x,
-				y: tt.y,
-				world: world.NewWorld(tt.areaW, tt.areaH, nil),
+				x:             tt.x,
+				y:             tt.y,
+				world:         world.NewWorld(tt.areaW, tt.areaH, nil),
 			}
 			e.directionCheck()
 			assert.Equal(t, tt.expected, e.direction)

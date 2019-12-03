@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/smeshkov/trovehero/engine"
+	"github.com/smeshkov/trovehero"
 )
 
 func main() {
-	if err := engine.Run(); err != nil {
+	if err := trovehero.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
 		os.Exit(3)
 	}

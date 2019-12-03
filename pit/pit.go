@@ -33,7 +33,7 @@ func NewPit(x, y, height, width int32, depth int8) *Pit {
 func (p *Pit) Depth() int8 {
 	// p.mu.RLock()
 	// defer p.mu.RUnlock()
-	
+
 	return p.depth
 }
 

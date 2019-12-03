@@ -102,26 +102,26 @@ func (e *Enemy) canSeeHero(hero *sdl.Rect) bool {
 	case direction.North:
 		triangle = [3]*sdl.Point{
 			location,
-			&sdl.Point{X: location.X - e.sightWidth/2, Y: location.Y - e.sightDistnace},
-			&sdl.Point{X: location.X + e.sightWidth/2, Y: location.Y - e.sightDistnace},
+			{X: location.X - e.sightWidth/2, Y: location.Y - e.sightDistnace},
+			{X: location.X + e.sightWidth/2, Y: location.Y - e.sightDistnace},
 		}
 	case direction.East:
 		triangle = [3]*sdl.Point{
 			location,
-			&sdl.Point{X: location.X + e.sightDistnace, Y: location.Y - e.sightWidth/2},
-			&sdl.Point{X: location.X + e.sightDistnace, Y: location.Y + e.sightWidth/2},
+			{X: location.X + e.sightDistnace, Y: location.Y - e.sightWidth/2},
+			{X: location.X + e.sightDistnace, Y: location.Y + e.sightWidth/2},
 		}
 	case direction.South:
 		triangle = [3]*sdl.Point{
 			location,
-			&sdl.Point{X: location.X - e.sightWidth/2, Y: location.Y + e.sightDistnace},
-			&sdl.Point{X: location.X + e.sightWidth/2, Y: location.Y + e.sightDistnace},
+			{X: location.X - e.sightWidth/2, Y: location.Y + e.sightDistnace},
+			{X: location.X + e.sightWidth/2, Y: location.Y + e.sightDistnace},
 		}
 	case direction.West:
 		triangle = [3]*sdl.Point{
 			location,
-			&sdl.Point{X: location.X - e.sightDistnace, Y: location.Y - e.sightWidth/2},
-			&sdl.Point{X: location.X - e.sightDistnace, Y: location.Y + e.sightWidth/2},
+			{X: location.X - e.sightDistnace, Y: location.Y - e.sightWidth/2},
+			{X: location.X - e.sightDistnace, Y: location.Y + e.sightWidth/2},
 		}
 	}
 
