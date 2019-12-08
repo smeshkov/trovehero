@@ -30,7 +30,7 @@ func NewScene(r *sdl.Renderer) (*Scene, error) {
 	w := world.NewWorld(1024, 768, &sdl.Rect{W: 1024, H: 768, X: 0, Y: 0})
 
 	p := pit.NewPit(w.W/2, 250, 50, 150, -60)
-	h := hero.NewHero(w.W/2, 700)
+	h := hero.NewHero(w.W/2, 700, w)
 	e := enemy.NewEnemy(30, 30, w)
 
 	return &Scene{hero: h, pit: p, enemy: e}, nil

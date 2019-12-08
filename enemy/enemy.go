@@ -83,7 +83,7 @@ func (e *Enemy) setDefaults(x, y, width, height int32, w *world.World) *Enemy {
 
 	// AI
 	e.sightDistnace = 50
-	e.sightWidth = 150
+	e.sightWidth = 350
 	e.direction = direction.West
 
 	// World

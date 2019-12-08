@@ -8,6 +8,7 @@ import (
 
 	"github.com/smeshkov/trovehero/pit"
 	"github.com/smeshkov/trovehero/types/command"
+	"github.com/smeshkov/trovehero/world"
 )
 
 const (
@@ -44,22 +45,25 @@ type Hero struct {
 
 	crashingDepth int8
 	dead          bool
+
+	// World
+	world *world.World
 }
 
 // NewHero creates new instance of Hero in given coordinates.
-func NewHero(x, y int32) *Hero {
+func NewHero(x, y int32, w *world.World) *Hero {
 	h := &Hero{}
-	return h.setDefaults(x, y, 50, 50)
+	return h.setDefaults(x, y, 50, 50, w)
 }
 
-func (h *Hero) setDefaults(x, y, heroWidth, heroHeight int32) *Hero {
+func (h *Hero) setDefaults(x, y, heroWidth, heroHeight int32, w *world.World) *Hero {
 	h.time = 0
 
 	// properties
 	h.height = heroHeight
 	h.width = heroWidth
 	h.maxMoveSpeed = 4
-	h.maxJumpSpeed = 4
+	h.maxJumpSpeed = 2
 
 	h.altitude = 0
 
@@ -75,6 +79,8 @@ func (h *Hero) setDefaults(x, y, heroWidth, heroHeight int32) *Hero {
 
 	h.crashingDepth = 0
 	h.dead = false
+
+	h.world = w
 
 	return h
 }
@@ -142,7 +148,7 @@ func (h *Hero) Paint(r *sdl.Renderer) error {
 func (h *Hero) Restart() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	h.setDefaults(1024/2, 550, 50, 50)
+	h.setDefaults(1024/2, 550, 50, 50, h.world)
 }
 
 // Destroy removes Hero.
@@ -201,6 +207,34 @@ func (h *Hero) handleJump() {
 	}
 }
 
+func (h *Hero) canGoHorizontal() bool {
+	// going right
+	if h.horSpeed > 0 && h.x+h.width >= h.world.W {
+		return false
+	}
+
+	// going left
+	if h.horSpeed < 0 && h.x <= 0 {
+		return false
+	}
+
+	return true
+}
+
+func (h *Hero) canGoVertical() bool {
+	// going up
+	if h.vertSpeed < 0 && h.y <= 0 {
+		return false
+	}
+
+	// going down
+	if h.vertSpeed > 0 && h.y+h.height >= h.world.H {
+		return false
+	}
+
+	return true
+}
+
 func (h *Hero) handleMove() {
 	var frict float64
 	if h.altitude == 0 {
@@ -209,7 +243,7 @@ func (h *Hero) handleMove() {
 		frict = airFriction
 	}
 
-	if h.horSpeed != 0 {
+	if h.horSpeed != 0 && h.canGoHorizontal() {
 		h.x += int32(h.horSpeed)
 		if h.horSpeed > 0 {
 			h.horSpeed = float32(math.Max(0, float64(h.horSpeed)-frict))
@@ -217,7 +251,7 @@ func (h *Hero) handleMove() {
 			h.horSpeed = float32(math.Min(0, float64(h.horSpeed)+frict))
 		}
 	}
-	if h.vertSpeed != 0 {
+	if h.vertSpeed != 0 && h.canGoVertical() {
 		h.y += int32(h.vertSpeed)
 		if h.vertSpeed > 0 {
 			h.vertSpeed = float32(math.Max(0, float64(h.vertSpeed)-frict))
