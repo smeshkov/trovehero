@@ -7,6 +7,7 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 
 	"github.com/smeshkov/trovehero/pit"
+	"github.com/smeshkov/trovehero/trove"
 	"github.com/smeshkov/trovehero/types/command"
 	"github.com/smeshkov/trovehero/world"
 )
@@ -267,8 +268,8 @@ func (h *Hero) handleMove() {
 	}
 }
 
-// Touch checks collision with Pit.
-func (h *Hero) Touch(p *pit.Pit) {
+// TouchPit checks collision with Pit.
+func (h *Hero) TouchPit(p *pit.Pit) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -289,6 +290,31 @@ func (h *Hero) Touch(p *pit.Pit) {
 	}
 
 	h.crashingDepth = p.Depth()
+}
+
+// TouchTrove checks collision with Pit.
+func (h *Hero) TouchTrove(t *trove.Trove) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if h.altitude > 0 { // above in the air
+		return
+	}
+	if t.X > h.x+h.w-collisionMargin { // too far right
+		return
+	}
+	if t.X+t.W-collisionMargin < h.x { // too far left
+		return
+	}
+	if t.Y > h.y+h.h-collisionMargin { // too far below
+		return
+	}
+	if t.Y+t.H-collisionMargin < h.y { // to far above
+		return
+	}
+
+	t.Collect()
+	h.world.IncScore()
 }
 
 // Location returns a location of the Hero.

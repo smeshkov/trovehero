@@ -10,14 +10,17 @@ import (
 	"github.com/smeshkov/trovehero/enemy"
 	"github.com/smeshkov/trovehero/hero"
 	"github.com/smeshkov/trovehero/pit"
+	"github.com/smeshkov/trovehero/trove"
 	"github.com/smeshkov/trovehero/types/command"
 	"github.com/smeshkov/trovehero/world"
 )
 
 // Scene represent the scene of the game.
 type Scene struct {
+	world *world.World
 	hero  *hero.Hero
 	pit   *pit.Pit
+	trove []*trove.Trove
 	enemy *enemy.Enemy
 }
 
@@ -50,7 +53,13 @@ func NewScene(r *sdl.Renderer) (*Scene, error) {
 	pos = w.RandomizePos(id, 50, 50)
 	e := enemy.NewEnemy(id, pos.X, pos.Y, w)
 
-	return &Scene{hero: h, pit: p, enemy: e}, nil
+	return &Scene{
+		world: w,
+		hero:  h,
+		pit:   p,
+		trove: createTroves(w, 3),
+		enemy: e,
+	}, nil
 }
 
 // Run runs the Scene.
@@ -61,7 +70,7 @@ func (s *Scene) Run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 		defer close(errc)
 		tick := time.Tick(10 * time.Millisecond)
 
-		if err := DrawTitle(r, "Trove Hero"); err != nil {
+		if err := DrawTitle(r, "Trove Hero", &sdl.Color{R: 255, G: 100, B: 0, A: 255}); err != nil {
 			errc <- fmt.Errorf("could not draw title: %w", err)
 		}
 		time.Sleep(1 * time.Second)
@@ -76,7 +85,15 @@ func (s *Scene) Run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 				s.update()
 
 				if s.hero.IsDead() {
-					if err := DrawTitle(r, "Game Over"); err != nil {
+					if err := DrawTitle(r, "Game Over", &sdl.Color{R: 210, G: 0, B: 0, A: 255}); err != nil {
+						errc <- err
+					}
+					time.Sleep(1 * time.Second)
+					s.restart()
+				}
+
+				if len(s.trove) == 0 {
+					if err := DrawTitle(r, "You won", &sdl.Color{R: 0, G: 210, B: 0, A: 255}); err != nil {
 						errc <- err
 					}
 					time.Sleep(1 * time.Second)
@@ -130,17 +147,30 @@ func (s *Scene) handleKeyboardEvent(event *sdl.KeyboardEvent) bool {
 }
 
 func (s *Scene) update() {
+	s.hero.TouchPit(s.pit)
+
+	i := 0 // output index
+	for _, t := range s.trove {
+		s.hero.TouchTrove(t)
+		if !t.IsCollected() {
+			// copy and increment index
+			s.trove[i] = t
+			i++
+		}
+	}
+	s.trove = s.trove[:i]
+
+	s.enemy.Touch(s.hero)
+	s.enemy.Watch(s.hero)
 	s.hero.Update()
 	s.enemy.Update()
 	s.pit.Update()
-	s.hero.Touch(s.pit)
-	s.enemy.Touch(s.hero)
-	s.enemy.Watch(s.hero)
 }
 
 func (s *Scene) restart() {
 	s.hero.Restart()
 	s.pit.Restart()
+	s.trove = createTroves(s.world, 3)
 	s.enemy.Restart()
 }
 
@@ -150,6 +180,13 @@ func (s *Scene) paint(r *sdl.Renderer) error {
 	if err := s.pit.Paint(r); err != nil {
 		return err
 	}
+
+	for _, t := range s.trove {
+		if err := t.Paint(r); err != nil {
+			return err
+		}
+	}
+
 	if err := s.hero.Paint(r); err != nil {
 		return err
 	}

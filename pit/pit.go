@@ -21,7 +21,7 @@ type Pit struct {
 
 	depth int8
 
-	w *world.World
+	world *world.World
 }
 
 // NewPit creates new instance of the Pit.
@@ -33,7 +33,7 @@ func NewPit(id string, x, y, width, height int32, depth int8, w *world.World) *P
 		W:     width,
 		H:     height,
 		depth: depth,
-		w:     w,
+		world: w,
 	}
 }
 
@@ -71,8 +71,8 @@ func (p *Pit) Restart() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	pos := p.w.RandomizePos(p.ID, 150, 50)
-	p = NewPit(p.ID, pos.X, pos.Y, pos.W, pos.H, -60, p.w)
+	pos := p.world.RandomizePos(p.ID, 150, 50)
+	p = NewPit(p.ID, pos.X, pos.Y, pos.W, pos.H, -60, p.world)
 }
 
 // Destroy ...

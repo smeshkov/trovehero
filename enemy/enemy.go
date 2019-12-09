@@ -150,19 +150,19 @@ func (e *Enemy) directionCheck() {
 	for {
 		changed = false
 
-		if e.direction == direction.North && (e.y-e.sightDistnace) <= 0 {
+		if e.direction == direction.North && (e.y-e.sightDistnace/4) <= 0 {
 			e.direction = direction.East
 			changed = true
 		}
-		if e.direction == direction.East && (e.x+e.w+e.sightDistnace) >= e.world.W {
+		if e.direction == direction.East && (e.x+e.w+e.sightDistnace/4) >= e.world.W {
 			e.direction = direction.South
 			changed = true
 		}
-		if e.direction == direction.South && (e.y+e.h+e.sightDistnace) >= e.world.H {
+		if e.direction == direction.South && (e.y+e.h+e.sightDistnace/4) >= e.world.H {
 			e.direction = direction.West
 			changed = true
 		}
-		if e.direction == direction.West && (e.x-e.sightDistnace) <= 0 {
+		if e.direction == direction.West && (e.x-e.sightDistnace/4) <= 0 {
 			e.direction = direction.North
 			changed = true
 		}
@@ -173,19 +173,6 @@ func (e *Enemy) directionCheck() {
 		}
 	}
 
-	// for i := 0; i < 3; i++ {
-
-	// 	if e.direction == direction.North && (e.y-e.sightDistnace) <= 0 {
-	// 		e.direction = direction.East
-	// 	} else if e.direction == direction.East && (e.x+e.w+e.sightDistnace) >= e.world.W {
-	// 		e.direction = direction.South
-	// 	} else if e.direction == direction.South && (e.y+e.h+e.sightDistnace) >= e.world.H {
-	// 		e.direction = direction.West
-	// 	} else if e.direction == direction.West && (e.x-e.sightDistnace) <= 0 {
-	// 		e.direction = direction.North
-	// 	}
-
-	// }
 }
 
 // Touch checks collision with Pit.

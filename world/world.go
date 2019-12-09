@@ -8,21 +8,21 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
-const positionMargin = 100
+const posMargin = 100
 
 var (
 	r = rand.New(rand.NewSource(time.Now().UTC().Unix()))
-
-	objects sync.Map // []*sdl.Rect{}
 )
 
 // World knows location of every object.
 type World struct {
+	mu sync.RWMutex
+
 	// randomizer
 	r *rand.Rand
 
 	// map of all objects' positions in the world
-	pos sync.Map
+	pos map[string]*sdl.Rect
 
 	// size
 	H int32
@@ -30,16 +30,19 @@ type World struct {
 
 	// view port
 	vp *sdl.Rect
+
+	// holds player's score
+	score int8
 }
 
 // NewWorld ...
 func NewWorld(width, height int32, screen *sdl.Rect) *World {
 	return &World{
-		r:  rand.New(rand.NewSource(time.Now().UTC().Unix())),
-		pos: sync.Map{},
-		W:  width,
-		H:  height,
-		vp: screen,
+		r:   rand.New(rand.NewSource(time.Now().UTC().Unix())),
+		pos: make(map[string]*sdl.Rect),
+		W:   width,
+		H:   height,
+		vp:  screen,
 	}
 }
 
@@ -54,31 +57,47 @@ func (w *World) RandomizePos(objID string, objW, objH int32) *sdl.Rect {
 		pos = &sdl.Rect{X: x, Y: y, W: objW, H: objH}
 		passed = true
 
-		w.pos.Range(func (key, value interface{}) bool {
-			p := value.(*sdl.Rect)
+		for key, p := range w.pos {
+			// skip itself hence it will be replaced anyway at the end
+			if key == objID {
+				continue
+			}
+
 			// clearenceZone has an extra margin to provide a gap in between objects
 			clearenceZone := &sdl.Rect{
-				X: p.X - positionMargin,
-				Y: p.Y - positionMargin,
-				W: p.W + positionMargin,
-				H: p.H + positionMargin,
+				X: p.X - posMargin,
+				Y: p.Y - posMargin,
+				W: p.W + posMargin,
+				H: p.H + posMargin,
 			}
 
 			if clearenceZone.HasIntersection(pos) {
 				passed = false
-				return false
+				break
 			}
-
-			return true
-		})
+		}
 
 	}
 
 	if pos != nil {
-		w.pos.Store(objID, pos)
+		w.pos[objID] = pos
 	}
 
 	return pos
+}
+
+// IncScore increments player's score
+func (w *World) IncScore() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.score++
+}
+
+// GetScore returns player's score
+func (w *World) GetScore() int8 {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	return w.score
 }
 
 // Update ...
