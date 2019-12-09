@@ -1,6 +1,7 @@
 package scene
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -27,11 +28,27 @@ func NewScene(r *sdl.Renderer) (*Scene, error) {
 	// 	return nil, fmt.Errorf("could not load background image: %w", err)
 	// }
 
-	w := world.NewWorld(1024, 768, &sdl.Rect{W: 1024, H: 768, X: 0, Y: 0})
+	viewPort := r.GetViewport()
 
-	p := pit.NewPit(w.W/2, 250, 50, 150, -60)
-	h := hero.NewHero(w.W/2, 700, w)
-	e := enemy.NewEnemy(30, 30, w)
+	w := world.NewWorld(viewPort.W, viewPort.H, &viewPort)
+
+	// used for storing ID of the object
+	var id string
+
+	// used for storing position of the object
+	var pos *sdl.Rect
+
+	id = "pit"
+	pos = w.RandomizePos(id, 150, 50)
+	p := pit.NewPit(id, pos.X, pos.Y, pos.W, pos.H, -60, w)
+
+	id = "hero"
+	pos = w.RandomizePos(id, 50, 50)
+	h := hero.NewHero(id, pos.X, pos.Y, w)
+
+	id = "enemy"
+	pos = w.RandomizePos(id, 50, 50)
+	e := enemy.NewEnemy(id, pos.X, pos.Y, w)
 
 	return &Scene{hero: h, pit: p, enemy: e}, nil
 }
@@ -43,6 +60,12 @@ func (s *Scene) Run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 	go func() {
 		defer close(errc)
 		tick := time.Tick(10 * time.Millisecond)
+
+		if err := DrawTitle(r, "Trove Hero"); err != nil {
+			errc <- fmt.Errorf("could not draw title: %w", err)
+		}
+		time.Sleep(1 * time.Second)
+
 		for {
 			select {
 			case e := <-events:

@@ -17,11 +17,16 @@ const (
 	airFriction     = 0.1
 	altitudeMargin  = 35
 	collisionMargin = 10
+
+	heroW = 50
+	heroH = 50
 )
 
 // Hero is a playbale character.
 type Hero struct {
 	mu sync.RWMutex
+
+	ID string
 
 	time int64
 
@@ -51,9 +56,9 @@ type Hero struct {
 }
 
 // NewHero creates new instance of Hero in given coordinates.
-func NewHero(x, y int32, w *world.World) *Hero {
-	h := &Hero{}
-	return h.setDefaults(x, y, 50, 50, w)
+func NewHero(id string, x, y int32, w *world.World) *Hero {
+	h := &Hero{ID: id}
+	return h.setDefaults(x, y, heroW, heroH, w)
 }
 
 func (h *Hero) setDefaults(x, y, heroWidth, heroHeight int32, w *world.World) *Hero {
@@ -133,7 +138,7 @@ func (h *Hero) Paint(r *sdl.Renderer) error {
 	defer h.mu.RUnlock()
 
 	// fill new rectangle
-	r.SetDrawColor(255, 100, 0, 255)
+	r.SetDrawColor(0, 160, 0, 255)
 	r.FillRect(h.getShape())
 	r.SetDrawColor(0, 0, 0, 255)
 
@@ -148,7 +153,8 @@ func (h *Hero) Paint(r *sdl.Renderer) error {
 func (h *Hero) Restart() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	h.setDefaults(1024/2, 550, 50, 50, h.world)
+	pos := h.world.RandomizePos(h.ID, heroW, heroH)
+	h.setDefaults(pos.X, pos.Y, pos.W, pos.H, h.world)
 }
 
 // Destroy removes Hero.

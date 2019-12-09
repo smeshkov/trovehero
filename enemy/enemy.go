@@ -28,11 +28,11 @@ const (
 type Enemy struct {
 	mu sync.RWMutex
 
+	ID string
+
 	time int64
 
 	// properties
-	height       int32
-	width        int32
 	maxMoveSpeed float32
 	maxJumpSpeed float32
 
@@ -52,24 +52,20 @@ type Enemy struct {
 	sightDistnace int32
 	sightWidth    int32
 	direction     direction.Type
-	// player        *sdl.Rect
-	// enemyMemory   int32
 
 	// World
 	world *world.World
 }
 
 // NewEnemy creates new instance of Enemy in given coordinates.
-func NewEnemy(x, y int32, w *world.World) *Enemy {
-	e := &Enemy{}
+func NewEnemy(id string, x, y int32, w *world.World) *Enemy {
+	e := &Enemy{ID: id}
 	return e.setDefaults(x, y, enemyWidth, enemyHeight, w)
 }
 
 func (e *Enemy) setDefaults(x, y, width, height int32, w *world.World) *Enemy {
 	e.time = 0
 
-	e.height = height
-	e.width = width
 	e.maxMoveSpeed = 2
 	e.maxJumpSpeed = 1
 
@@ -82,7 +78,7 @@ func (e *Enemy) setDefaults(x, y, width, height int32, w *world.World) *Enemy {
 	e.w = width
 
 	// AI
-	e.sightDistnace = 50
+	e.sightDistnace = 150
 	e.sightWidth = 350
 	e.direction = direction.West
 
@@ -95,7 +91,7 @@ func (e *Enemy) setDefaults(x, y, width, height int32, w *world.World) *Enemy {
 func (e *Enemy) canSeeHero(hero *sdl.Rect) bool {
 	var triangle [3]*sdl.Point
 
-	location := &sdl.Point{X: e.x + e.width/2, Y: e.y + e.height/2}
+	location := &sdl.Point{X: e.x + e.w/2, Y: e.y + e.h/2}
 
 	// create triangle view, depending on which direction is facing
 	switch e.direction {
@@ -133,13 +129,13 @@ func (e *Enemy) canSeeHero(hero *sdl.Rect) bool {
 }
 
 func (e *Enemy) directTo(x, y int32) {
-	if e.x+e.width > x {
+	if e.x+e.w > x {
 		e.direction = direction.West
 	}
 	if e.x < x {
 		e.direction = direction.East
 	}
-	if e.y+e.height > y {
+	if e.y+e.h > y {
 		e.direction = direction.North
 	}
 	if e.y < y {
@@ -149,19 +145,47 @@ func (e *Enemy) directTo(x, y int32) {
 
 func (e *Enemy) directionCheck() {
 
-	for i := 0; i < 3; i++ {
+	var changed bool
 
-		if e.direction == direction.North && e.y-e.sightDistnace <= 0 {
+	for {
+		changed = false
+
+		if e.direction == direction.North && (e.y-e.sightDistnace) <= 0 {
 			e.direction = direction.East
-		} else if e.direction == direction.East && e.x+e.width+e.sightDistnace >= e.world.W {
+			changed = true
+		}
+		if e.direction == direction.East && (e.x+e.w+e.sightDistnace) >= e.world.W {
 			e.direction = direction.South
-		} else if e.direction == direction.South && e.y+e.height+e.sightDistnace >= e.world.H {
+			changed = true
+		}
+		if e.direction == direction.South && (e.y+e.h+e.sightDistnace) >= e.world.H {
 			e.direction = direction.West
-		} else if e.direction == direction.West && e.x-e.sightDistnace <= 0 {
+			changed = true
+		}
+		if e.direction == direction.West && (e.x-e.sightDistnace) <= 0 {
 			e.direction = direction.North
+			changed = true
 		}
 
+		if !changed {
+			// we are done here, hence no changes happened
+			break
+		}
 	}
+
+	// for i := 0; i < 3; i++ {
+
+	// 	if e.direction == direction.North && (e.y-e.sightDistnace) <= 0 {
+	// 		e.direction = direction.East
+	// 	} else if e.direction == direction.East && (e.x+e.w+e.sightDistnace) >= e.world.W {
+	// 		e.direction = direction.South
+	// 	} else if e.direction == direction.South && (e.y+e.h+e.sightDistnace) >= e.world.H {
+	// 		e.direction = direction.West
+	// 	} else if e.direction == direction.West && (e.x-e.sightDistnace) <= 0 {
+	// 		e.direction = direction.North
+	// 	}
+
+	// }
 }
 
 // Touch checks collision with Pit.
@@ -272,7 +296,7 @@ func (e *Enemy) Paint(r *sdl.Renderer) error {
 	defer e.mu.RUnlock()
 
 	// fill new rectangle
-	r.SetDrawColor(0, 128, 0, 255)
+	r.SetDrawColor(160, 0, 0, 255)
 	r.FillRect(e.getShape())
 	r.SetDrawColor(0, 0, 0, 255)
 
@@ -300,7 +324,8 @@ func (e *Enemy) getShape() *sdl.Rect {
 func (e *Enemy) Restart() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	e.setDefaults(30, 30, enemyWidth, enemyHeight, e.world)
+	pos := e.world.RandomizePos(e.ID, enemyWidth, enemyHeight)
+	e.setDefaults(pos.X, pos.Y, pos.W, pos.H, e.world)
 }
 
 // Destroy removes Enemy.

@@ -7,32 +7,6 @@ import (
 	ttf "github.com/veandco/go-sdl2/ttf"
 )
 
-/* func getRandomPosition(previous []*sdl.Rect, h, w int32, world *world.World) (x, y int32) {
-	x = rand.Int31n(world.W - w)
-	y = rand.Int31n(world.H - h)
-
-	var passed bool
-
-	for !passed {
-		passed = true
-		for _, p := range previous {
-			// if p.
-			// if x == p.X || x == p.X + p.W || x > p.X && x < p.X + p.W {
-			// 	passed = false
-			// }
-			// if x+w == p.X || x+w == p.X + p.W || x+w > p.X && x+w < p.X + p.W {
-			// 	passed = false
-			// }
-			// if y == p.Y || y == p.Y + p.H || y > p.Y && y < p.Y + p.H {
-			// 	passed = false
-			// }
-			// if x+w == p.X || x+w == p.X + p.W || x+w > p.X && x+w < p.X + p.W {
-			// 	passed = false
-			// }
-		}
-	}
-} */
-
 // DrawTitle draws a title with given "text".
 func DrawTitle(r *sdl.Renderer, text string) error {
 	if err := r.Clear(); err != nil {

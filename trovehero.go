@@ -3,7 +3,6 @@ package trovehero
 import (
 	"fmt"
 	"runtime"
-	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
 	ttf "github.com/veandco/go-sdl2/ttf"
@@ -24,17 +23,11 @@ func Run() error {
 	}
 	defer ttf.Quit()
 
-	w, r, err := sdl.CreateWindowAndRenderer(1024, 768, sdl.WINDOW_SHOWN)
+	w, r, err := sdl.CreateWindowAndRenderer(1280, 720, sdl.WINDOW_SHOWN)
 	if err != nil {
 		return fmt.Errorf("could not create window: %w", err)
 	}
 	defer w.Destroy()
-
-	if err := scene.DrawTitle(r, "Trove Hero"); err != nil {
-		return fmt.Errorf("could not draw title: %w", err)
-	}
-
-	time.Sleep(1 * time.Second)
 
 	s, err := scene.NewScene(r)
 	if err != nil {

@@ -3,6 +3,8 @@ package pit
 import (
 	"sync"
 
+	"github.com/smeshkov/trovehero/world"
+
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -10,22 +12,28 @@ import (
 type Pit struct {
 	mu sync.RWMutex
 
+	ID string
+
 	time int64
 
 	X, Y int32
 	W, H int32
 
 	depth int8
+
+	w *world.World
 }
 
 // NewPit creates new instance of the Pit.
-func NewPit(x, y, height, width int32, depth int8) *Pit {
+func NewPit(id string, x, y, width, height int32, depth int8, w *world.World) *Pit {
 	return &Pit{
+		ID:    id,
 		X:     x,
 		Y:     y,
-		H:     height,
 		W:     width,
+		H:     height,
 		depth: depth,
+		w:     w,
 	}
 }
 
@@ -51,7 +59,7 @@ func (p *Pit) Paint(r *sdl.Renderer) error {
 	defer p.mu.RUnlock()
 
 	// fill new rectangle
-	r.SetDrawColor(0, 0, 255, 255)
+	r.SetDrawColor(0, 0, 160, 255)
 	r.FillRect(&sdl.Rect{X: p.X, Y: p.Y, W: p.W, H: p.H})
 	r.SetDrawColor(0, 0, 0, 255)
 
@@ -63,7 +71,8 @@ func (p *Pit) Restart() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p = NewPit(1025/2, 250, 50, 150, -60)
+	pos := p.w.RandomizePos(p.ID, 150, 50)
+	p = NewPit(p.ID, pos.X, pos.Y, pos.W, pos.H, -60, p.w)
 }
 
 // Destroy ...
