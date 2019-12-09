@@ -3,6 +3,10 @@
 An attempt to build a top down adventure game. 
 Inspired by set of videos by [Francesc Campoy](https://campoy.cat/) - [Flappy Gopher](https://github.com/campoy/flappy-gopher).
 
+## Setup
+
+Follow instractions from [here](https://github.com/veandco/go-sdl2) to install SDL2, [pkg-config](https://en.wikipedia.org/wiki/Pkg-config) is also required.
+
 ## Playing game
 
 ```
