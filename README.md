@@ -14,6 +14,6 @@ OR
 
 `make run`
 
-Use `arrows` to move arround the orange square and avoid green square, you can use `space` jump over a blue rectangle.
+Use `arrows` to move arround the green rectangle in order to collect yellow rectangles and avoid red and blue ones, you can use `space` to jump over a blue rectangle.
 
 ![Trove Hero](https://storage.googleapis.com/www.zoomio.org/trovehero.png)
