@@ -19,7 +19,7 @@ type World struct {
 	mu sync.RWMutex
 
 	// randomizer
-	r *rand.Rand
+	Rand *rand.Rand
 
 	// map of all objects' positions in the world
 	pos map[string]*sdl.Rect
@@ -33,16 +33,19 @@ type World struct {
 
 	// holds player's score
 	score int8
+
+	// level
+	level int8
 }
 
 // NewWorld ...
 func NewWorld(width, height int32, screen *sdl.Rect) *World {
 	return &World{
-		r:   rand.New(rand.NewSource(time.Now().UTC().Unix())),
-		pos: make(map[string]*sdl.Rect),
-		W:   width,
-		H:   height,
-		vp:  screen,
+		Rand: rand.New(rand.NewSource(time.Now().UTC().Unix())),
+		pos:  make(map[string]*sdl.Rect),
+		W:    width,
+		H:    height,
+		vp:   screen,
 	}
 }
 
@@ -52,8 +55,8 @@ func (w *World) RandomizePos(objID string, objW, objH int32) *sdl.Rect {
 	var pos *sdl.Rect
 
 	for !passed {
-		x := r.Int31n(w.W - objW) // decrement by width in order to fit whole object at the rightmost side
-		y := r.Int31n(w.H - objH) // decrement by height in order to fit whole object at the bottom
+		x := w.Rand.Int31n(w.W - objW) // decrement by width in order to fit whole object at the rightmost side
+		y := w.Rand.Int31n(w.H - objH) // decrement by height in order to fit whole object at the bottom
 		pos = &sdl.Rect{X: x, Y: y, W: objW, H: objH}
 		passed = true
 
@@ -86,18 +89,32 @@ func (w *World) RandomizePos(objID string, objW, objH int32) *sdl.Rect {
 	return pos
 }
 
-// IncScore increments player's score
+// IncScore increments player's score.
 func (w *World) IncScore() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.score++
 }
 
-// GetScore returns player's score
+// GetScore returns player's score.
 func (w *World) GetScore() int8 {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	return w.score
+}
+
+// IncLevel increments level number.
+func (w *World) IncLevel() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.level++
+}
+
+// GetLevel returns level number.
+func (w *World) GetLevel() int8 {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	return w.level
 }
 
 // Update ...

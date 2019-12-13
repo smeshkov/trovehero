@@ -2,12 +2,15 @@ package scene
 
 import (
 	"fmt"
-
-	"github.com/smeshkov/trovehero/trove"
-	"github.com/smeshkov/trovehero/world"
+	"math"
 
 	"github.com/veandco/go-sdl2/sdl"
 	ttf "github.com/veandco/go-sdl2/ttf"
+
+	"github.com/smeshkov/trovehero/enemy"
+	"github.com/smeshkov/trovehero/pit"
+	"github.com/smeshkov/trovehero/trove"
+	"github.com/smeshkov/trovehero/world"
 )
 
 // DrawTitle draws a title with given "text".
@@ -44,12 +47,37 @@ func DrawTitle(r *sdl.Renderer, text string, color *sdl.Color) error {
 	return nil
 }
 
-func createTroves(w *world.World, num int) []*trove.Trove {
-	trs := make([]*trove.Trove, num)
-	for i := 0; i < num; i++ {
+func createPits(w *world.World, num int8) []*pit.Pit {
+	items := make([]*pit.Pit, num)
+	var i int8
+	for i = 0; i < num; i++ {
+		id := fmt.Sprintf("pit-%d", i)
+		width := int32(math.Max(30, float64(w.Rand.Int31n(150))))
+		height := int32(math.Max(30, float64(w.Rand.Int31n(150))))
+		pos := w.RandomizePos(id, width, height)
+		items[i] = pit.NewPit(id, pos.X, pos.Y, width, height, int8(w.Rand.Int31n(100)), w)
+	}
+	return items
+}
+
+func createTroves(w *world.World, num int8) []*trove.Trove {
+	items := make([]*trove.Trove, num)
+	var i int8
+	for i = 0; i < num; i++ {
 		id := fmt.Sprintf("trove-%d", i)
 		pos := w.RandomizePos(id, 50, 50)
-		trs[i] = trove.NewTrove(id, pos.X, pos.Y, w)
+		items[i] = trove.NewTrove(id, pos.X, pos.Y, w)
 	}
-	return trs
+	return items
+}
+
+func createEnemies(w *world.World, num int8) []*enemy.Enemy {
+	items := make([]*enemy.Enemy, num)
+	var i int8
+	for i = 0; i < num; i++ {
+		id := fmt.Sprintf("enemy-%d", i)
+		pos := w.RandomizePos(id, 50, 50)
+		items[i] = enemy.NewEnemy(id, pos.X, pos.Y, w)
+	}
+	return items
 }

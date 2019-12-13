@@ -17,11 +17,11 @@ import (
 
 // Scene represent the scene of the game.
 type Scene struct {
-	world *world.World
-	hero  *hero.Hero
-	pit   *pit.Pit
-	trove []*trove.Trove
-	enemy *enemy.Enemy
+	world   *world.World
+	hero    *hero.Hero
+	pits    []*pit.Pit
+	trove   []*trove.Trove
+	enemies []*enemy.Enemy
 }
 
 // NewScene returns new instance of the Scene.
@@ -41,24 +41,18 @@ func NewScene(r *sdl.Renderer) (*Scene, error) {
 	// used for storing position of the object
 	var pos *sdl.Rect
 
-	id = "pit"
-	pos = w.RandomizePos(id, 150, 50)
-	p := pit.NewPit(id, pos.X, pos.Y, pos.W, pos.H, -60, w)
-
 	id = "hero"
 	pos = w.RandomizePos(id, 50, 50)
 	h := hero.NewHero(id, pos.X, pos.Y, w)
 
-	id = "enemy"
-	pos = w.RandomizePos(id, 50, 50)
-	e := enemy.NewEnemy(id, pos.X, pos.Y, w)
+	lvl := w.GetLevel()
 
 	return &Scene{
-		world: w,
-		hero:  h,
-		pit:   p,
-		trove: createTroves(w, 3),
-		enemy: e,
+		world:   w,
+		hero:    h,
+		pits:    createPits(w, lvl),
+		trove:   createTroves(w, lvl+1),
+		enemies: createEnemies(w, lvl+1),
 	}, nil
 }
 
@@ -97,6 +91,7 @@ func (s *Scene) Run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 						errc <- err
 					}
 					time.Sleep(1 * time.Second)
+					s.world.IncLevel()
 					s.restart()
 				}
 
@@ -147,7 +142,9 @@ func (s *Scene) handleKeyboardEvent(event *sdl.KeyboardEvent) bool {
 }
 
 func (s *Scene) update() {
-	s.hero.TouchPit(s.pit)
+	for _, v := range s.pits {
+		s.hero.TouchPit(v)
+	}
 
 	i := 0 // output index
 	for _, t := range s.trove {
@@ -160,25 +157,41 @@ func (s *Scene) update() {
 	}
 	s.trove = s.trove[:i]
 
-	s.enemy.Touch(s.hero)
-	s.enemy.Watch(s.hero)
+	for _, e := range s.enemies {
+		e.Touch(s.hero)
+		e.Watch(s.hero)
+	}
+
 	s.hero.Update()
-	s.enemy.Update()
-	s.pit.Update()
+
+	for _, v := range s.enemies {
+		v.Update()
+	}
+
+	for _, v := range s.pits {
+		v.Update()
+	}
 }
 
 func (s *Scene) restart() {
 	s.hero.Restart()
-	s.pit.Restart()
-	s.trove = createTroves(s.world, 3)
-	s.enemy.Restart()
+
+	lvl := s.world.GetLevel()
+	s.pits = createPits(s.world, lvl)
+	s.trove = createTroves(s.world, lvl+1)
+	s.enemies = createEnemies(s.world, lvl+1)
+	// for _, e := range s.enemies {
+	// 	e.Restart()
+	// }
 }
 
 func (s *Scene) paint(r *sdl.Renderer) error {
 	r.Clear()
 
-	if err := s.pit.Paint(r); err != nil {
-		return err
+	for _, v := range s.pits {
+		if err := v.Paint(r); err != nil {
+			return err
+		}
 	}
 
 	for _, t := range s.trove {
@@ -190,8 +203,11 @@ func (s *Scene) paint(r *sdl.Renderer) error {
 	if err := s.hero.Paint(r); err != nil {
 		return err
 	}
-	if err := s.enemy.Paint(r); err != nil {
-		return err
+
+	for _, v := range s.enemies {
+		if err := v.Paint(r); err != nil {
+			return err
+		}
 	}
 
 	r.Present()
@@ -200,7 +216,11 @@ func (s *Scene) paint(r *sdl.Renderer) error {
 
 // Destroy destroys the scene.
 func (s *Scene) Destroy() {
-	s.pit.Destroy()
+	for _, v := range s.pits {
+		v.Destroy()
+	}
 	s.hero.Destroy()
-	s.enemy.Destroy()
+	for _, v := range s.enemies {
+		v.Destroy()
+	}
 }
