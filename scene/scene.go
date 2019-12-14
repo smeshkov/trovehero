@@ -15,6 +15,13 @@ import (
 	"github.com/smeshkov/trovehero/world"
 )
 
+var (
+	// text colors
+	orangeClr = &sdl.Color{R: 255, G: 100, B: 0, A: 255}
+	redClr    = &sdl.Color{R: 210, G: 0, B: 0, A: 255}
+	greenClr  = &sdl.Color{R: 0, G: 210, B: 0, A: 255}
+)
+
 // Scene represent the scene of the game.
 type Scene struct {
 	world   *world.World
@@ -64,7 +71,7 @@ func (s *Scene) Run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 		defer close(errc)
 		tick := time.Tick(10 * time.Millisecond)
 
-		if err := DrawTitle(r, "Trove Hero", &sdl.Color{R: 255, G: 100, B: 0, A: 255}); err != nil {
+		if err := drawTitle(r, "Trove Hero", orangeClr); err != nil {
 			errc <- fmt.Errorf("could not draw title: %w", err)
 		}
 		time.Sleep(1 * time.Second)
@@ -73,13 +80,14 @@ func (s *Scene) Run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 			select {
 			case e := <-events:
 				if done := s.handleEvent(e); done {
+					drawStats(s.world)
 					return
 				}
 			case <-tick:
 				s.update()
 
 				if s.hero.IsDead() {
-					if err := DrawTitle(r, "Game Over", &sdl.Color{R: 210, G: 0, B: 0, A: 255}); err != nil {
+					if err := drawTitle(r, "Game Over", redClr); err != nil {
 						errc <- err
 					}
 					time.Sleep(1 * time.Second)
@@ -87,7 +95,7 @@ func (s *Scene) Run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 				}
 
 				if len(s.trove) == 0 {
-					if err := DrawTitle(r, "You won", &sdl.Color{R: 0, G: 210, B: 0, A: 255}); err != nil {
+					if err := drawTitle(r, "You won", greenClr); err != nil {
 						errc <- err
 					}
 					time.Sleep(1 * time.Second)
@@ -180,9 +188,6 @@ func (s *Scene) restart() {
 	s.pits = createPits(s.world, lvl)
 	s.trove = createTroves(s.world, lvl+1)
 	s.enemies = createEnemies(s.world, lvl+1)
-	// for _, e := range s.enemies {
-	// 	e.Restart()
-	// }
 }
 
 func (s *Scene) paint(r *sdl.Renderer) error {
@@ -194,8 +199,8 @@ func (s *Scene) paint(r *sdl.Renderer) error {
 		}
 	}
 
-	for _, t := range s.trove {
-		if err := t.Paint(r); err != nil {
+	for _, v := range s.trove {
+		if err := v.Paint(r); err != nil {
 			return err
 		}
 	}

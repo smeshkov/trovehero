@@ -13,19 +13,18 @@ import (
 	"github.com/smeshkov/trovehero/world"
 )
 
-// DrawTitle draws a title with given "text".
-func DrawTitle(r *sdl.Renderer, text string, color *sdl.Color) error {
+// drawTitle draws a title with given "text".
+func drawTitle(r *sdl.Renderer, text string, color *sdl.Color) error {
 	if err := r.Clear(); err != nil {
 		return fmt.Errorf("could not clear renderer: %w", err)
 	}
 
-	f, err := ttf.OpenFont("res/fonts/Flappy.ttf", 20)
+	f, err := ttf.OpenFont("res/fonts/Flappy.ttf", 10)
 	if err != nil {
 		return fmt.Errorf("could not load font: %w", err)
 	}
 	defer f.Close()
 
-	// c := sdl.Color{R: 255, G: 100, B: 0, A: 255}
 	s, err := f.RenderUTF8Solid(text, *color)
 	if err != nil {
 		return fmt.Errorf("could not render title: %w", err)
@@ -44,6 +43,12 @@ func DrawTitle(r *sdl.Renderer, text string, color *sdl.Color) error {
 
 	r.Present()
 
+	return nil
+}
+
+func drawStats(w *world.World) error {
+	fmt.Printf("Your score is %d, you've reached level %d\n",
+		w.GetScore(), w.GetLevel())
 	return nil
 }
 
