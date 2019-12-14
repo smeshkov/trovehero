@@ -11,7 +11,7 @@ import (
 )
 
 // Run starts the game.
-func Run() error {
+func Run(level int8) error {
 	err := sdl.Init(sdl.INIT_EVERYTHING)
 	if err != nil {
 		return fmt.Errorf("could not initialize SDL: %w", err)
@@ -29,7 +29,7 @@ func Run() error {
 	}
 	defer w.Destroy()
 
-	s, err := scene.NewScene(r)
+	s, err := scene.NewScene(r, level)
 	if err != nil {
 		return fmt.Errorf("could not create scene: %w", err)
 	}

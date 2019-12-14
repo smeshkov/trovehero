@@ -32,7 +32,7 @@ type Scene struct {
 }
 
 // NewScene returns new instance of the Scene.
-func NewScene(r *sdl.Renderer) (*Scene, error) {
+func NewScene(r *sdl.Renderer, level int8) (*Scene, error) {
 	// bg, err := img.LoadTexture(r, "res/imgs/background.png")
 	// if err != nil {
 	// 	return nil, fmt.Errorf("could not load background image: %w", err)
@@ -40,7 +40,7 @@ func NewScene(r *sdl.Renderer) (*Scene, error) {
 
 	viewPort := r.GetViewport()
 
-	w := world.NewWorld(viewPort.W, viewPort.H, &viewPort)
+	w := world.NewWorld(viewPort.W, viewPort.H, &viewPort, level)
 
 	// used for storing ID of the object
 	var id string
@@ -74,6 +74,7 @@ func (s *Scene) Run(events <-chan sdl.Event, r *sdl.Renderer) <-chan error {
 		if err := drawTitle(r, "Trove Hero", orangeClr); err != nil {
 			errc <- fmt.Errorf("could not draw title: %w", err)
 		}
+		fmt.Printf("Starting on level %d\n", s.world.GetLevel())
 		time.Sleep(1 * time.Second)
 
 		for {

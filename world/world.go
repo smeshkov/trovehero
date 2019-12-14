@@ -39,13 +39,14 @@ type World struct {
 }
 
 // NewWorld ...
-func NewWorld(width, height int32, screen *sdl.Rect) *World {
+func NewWorld(width, height int32, screen *sdl.Rect, level int8) *World {
 	return &World{
-		Rand: rand.New(rand.NewSource(time.Now().UTC().Unix())),
-		pos:  make(map[string]*sdl.Rect),
-		W:    width,
-		H:    height,
-		vp:   screen,
+		Rand:  rand.New(rand.NewSource(time.Now().UTC().Unix())),
+		pos:   make(map[string]*sdl.Rect),
+		W:     width,
+		H:     height,
+		vp:    screen,
+		level: level,
 	}
 }
 
